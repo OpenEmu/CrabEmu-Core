@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -23,50 +23,8 @@
 
 #include <string.h>
 
-/* The hardwired palette when used in a TMS9918 mode */
-/* These constants are taken from Sean Young's TMS9918A Documentation */
-#ifndef _arch_dreamcast
-static const sms_vdp_color_t tms9918_pal[16] = {
-    0xFF000000, /* Transparent */
-    0xFF000000, /* Black */
-    0xFF21C842, /* Medium Green */
-    0xFF5EDC78, /* Light Green */
-    0xFF5455ED, /* Dark Blue */
-    0xFF7D76FC, /* Light Blue */
-    0xFFD4524D, /* Dark Red */
-    0xFF42EBF5, /* Cyan */
-    0xFFFC5554, /* Medium Red */
-    0xFFFF7978, /* Light Red */
-    0xFFD4C154, /* Dark Yellow */
-    0xFFE6CE80, /* Light Yellow */
-    0xFF21B03B, /* Dark Green */
-    0xFFC95BBA, /* Magenta */
-    0xFFCCCCCC, /* Gray */
-    0xFFFFFFFF, /* White */
-};
-#else
-static const sms_vdp_color_t tms9918_pal[16] = {
-    0x0000, /* Transparent */ 
-    0x0000, /* Black */
-    0x2648, /* Medium Green */
-    0x5EEF, /* Light Green */
-    0x52BD, /* Dark Blue */
-    0x7BBF, /* Light Blue */
-    0xD289, /* Dark Red */
-    0x475E, /* Cyan */
-    0xFAAA, /* Medium Red */
-    0xFBCF, /* Light Red */
-    0xD60A, /* Dark Yellow */
-    0xE670, /* Light Yellow */
-    0x2587, /* Dark Green */
-    0xCAD7, /* Magenta */
-    0xCE79, /* Gray */
-    0xFFFF  /* White */
-};
-#endif
-
 #define DRAW_COLOR(color, line, pixel) { \
-    sms_vdp_color_t *_tmp = (smsvdp.framebuffer) + ((line) << 8) + (pixel); \
+    pixel_t *_tmp = px + (pixel); \
     *_tmp = color; \
 }
 
@@ -78,8 +36,8 @@ static const sms_vdp_color_t tms9918_pal[16] = {
     DRAW_COLOR(fg, line, (i << 3) + pixel); \
 }
 
-void tms9918a_m0_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
-    sms_vdp_color_t bg, fg;
+void tms9918a_m0_draw_bg(int line, pixel_t *px) {
+    pixel_t bg, fg;
     uint8 *name_table;
     uint8 *pattern_gen;
     uint8 *color_table;
@@ -160,8 +118,8 @@ void tms9918a_m0_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
     DRAW_COLOR(tc, line, (i * 6) + pixel + 8); \
 }
 
-void tms9918a_m1_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
-    sms_vdp_color_t tc, bd;
+void tms9918a_m1_draw_bg(int line, pixel_t *px) {
+    pixel_t tc, bd;
     uint8 *name_table;
     uint8 *pattern_gen;
     uint8 pixels;
@@ -175,7 +133,7 @@ void tms9918a_m1_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
 
     row = line >> 3;
 
-    for(i = 0; i < 8; ++i)  {
+    for(i = 0; i < 8; ++i) {
         DRAW_COLOR(bd, line, i);
         DRAW_COLOR(bd, line, i + 248);
     }
@@ -227,8 +185,8 @@ void tms9918a_m1_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
     DRAW_COLOR(fg, line, (i << 3) + pixel); \
 }
 
-void tms9918a_m2_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
-    sms_vdp_color_t bg, fg;
+void tms9918a_m2_draw_bg(int line, pixel_t *px) {
+    pixel_t bg, fg;
     uint8 *name_table;
     uint8 *pattern_gen;
     uint8 *color_table;
@@ -308,12 +266,12 @@ void tms9918a_m2_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
     DRAW_COLOR(c, line, (i << 3) + pixel); \
 }
 
-void tms9918a_m3_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
+void tms9918a_m3_draw_bg(int line, pixel_t *px) {
     uint8 *name_table;
     uint8 *pattern_gen;
     int row, i;
     uint8 pattern, color;
-    sms_vdp_color_t c;
+    pixel_t c;
 
     name_table = &smsvdp.vram[(smsvdp.regs[2] & 0x0F) << 10];
     pattern_gen = &smsvdp.vram[(smsvdp.regs[4] & 0x07) << 11];
@@ -352,37 +310,43 @@ void tms9918a_m3_draw_bg(int line, sms_vdp_color_t *px __UNUSED__)  {
 
 #undef DRAW_PIXEL
 
-#define CHECK_PIXEL(i)  { \
-    if(col_tab[(i << size_shift)]) \
+#define CHECK_PIXEL(i) { \
+    if(col_tab[(i << size_shift)]++) \
         smsvdp.status |= 0x20; \
 \
-    col_tab[(i << size_shift)] = 1; \
-\
-    if(size_shift)  { \
-        if(col_tab[(i << 1) + 1]) \
+    if(size_shift) { \
+        if(col_tab[(i << 1) + 1]++) \
             smsvdp.status |= 0x20; \
-\
-        col_tab[(i << 1) + 1] = 1; \
     } \
 }
 
 #define DRAW_PIXEL(i) { \
-    DRAW_COLOR(c, line, (i << size_shift) + x); \
+    if(!col_tab[(i << size_shift) + x]++) { \
+        DRAW_COLOR(c, line, (i << size_shift) + x); \
+    } \
+    else { \
+        smsvdp.status |= 0x20; \
+    } \
 \
     if(size_shift) { \
-        DRAW_COLOR(c, line, (i << 1) + x + 1); \
+        if(!col_tab[(i << 1) + x + 1]++) { \
+            DRAW_COLOR(c, line, (i << 1) + x + 1); \
+        } \
+        else { \
+            smsvdp.status |= 0x20; \
+        } \
     } \
 }
 
-void tms9918a_m023_draw_spr(int line, sms_vdp_color_t *px __UNUSED__)   {
+void tms9918a_m023_draw_spr(int line, pixel_t *px) {
     uint8 *sat, *sprite_gen;
     int i, pattern_size, size_shift, tmp, pixels, pixels2 = 0;
     int count = 0, x, y = 0, pattern, color;
-    sms_vdp_color_t c;
-    static uint8 col_tab[0xFF];
+    pixel_t c;
+    static uint8 col_tab[256];
 
     /* First of all, clear out our colision table */
-    memset(col_tab, 0, 0xFF);
+    memset(col_tab, 0, 256);
 
     sat = &smsvdp.vram[(smsvdp.regs[5] & 0x7F) << 7];
     sprite_gen = &smsvdp.vram[(smsvdp.regs[6] & 0x07) << 11];
@@ -400,17 +364,17 @@ void tms9918a_m023_draw_spr(int line, sms_vdp_color_t *px __UNUSED__)   {
     for(i = 0; i < 32 && count < 5; ++i) {
         y = sat[i << 2] + 1;
 
-        if(y == 0xD1)   {
+        if(y == 0xD1) {
             /* End of list marker */
             break;
         }
-        else if(line < y)  {
+        else if(line < y) {
             continue;
         }
-        else if(y + (pattern_size << size_shift) - 1 < line)    {
+        else if(y + (pattern_size << size_shift) - 1 < line) {
             continue;
         }
-        else if(++count == 5)   {
+        else if(++count == 5) {
             break;
         }
 
@@ -418,187 +382,337 @@ void tms9918a_m023_draw_spr(int line, sms_vdp_color_t *px __UNUSED__)   {
         pattern = sat[(i << 2) + 2];
         color = sat[(i << 2) + 3];
 
-        if(color & 0x80)    {
+        if(color & 0x80) {
             x -= 32;
         }
 
         tmp = (line - y) >> size_shift;
 
-        if(pattern_size == 8)   {
+        if(pattern_size == 8) {
             pixels = *(sprite_gen + (pattern << 3) + tmp);
         }
-        else    {
+        else {
             pixels = *(sprite_gen + ((pattern & 0xFC) << 3) + tmp);
             pixels2 = *(sprite_gen + ((pattern & 0xFC) << 3) + tmp + 16);
         }
 
-        if(color & 0x0F)    {
+        if(color & 0x0F) {
             c = tms9918_pal[color & 0x0F];
         }
-        else    {
-            if(pattern_size == 8)   {
-                if(pixels & 0x80 && x >= 0)
+        else {
+            if(pattern_size == 8) {
+                if(pixels & 0x80 && x >= 0 && x < 256)
                     CHECK_PIXEL(0)
 
-                if(pixels & 0x40 && x + 1 >= 0)
+                if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
                     CHECK_PIXEL(1)
 
-                if(pixels & 0x20 && x + 2 >= 0)
+                if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
                     CHECK_PIXEL(2)
 
-                if(pixels & 0x10 && x + 3 >= 0)
+                if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
                     CHECK_PIXEL(3)
 
-                if(pixels & 0x08 && x + 4 >= 0)
+                if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
                     CHECK_PIXEL(4)
 
-                if(pixels & 0x04 && x + 5 >= 0)
+                if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
                     CHECK_PIXEL(5)
 
-                if(pixels & 0x02 && x + 6 >= 0)
+                if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
                     CHECK_PIXEL(6)
 
-                if(pixels & 0x01 && x + 7 >= 0)
+                if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
                     CHECK_PIXEL(7)
             }
-            else    {
-                if(pixels & 0x80 && x >= 0)
+            else {
+                if(pixels & 0x80 && x >= 0 && x < 256)
                     CHECK_PIXEL(0)
 
-                if(pixels & 0x40 && x + 1 >= 0)
+                if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
                     CHECK_PIXEL(1)
 
-                if(pixels & 0x20 && x + 2 >= 0)
+                if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
                     CHECK_PIXEL(2)
 
-                if(pixels & 0x10 && x + 3 >= 0)
+                if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
                     CHECK_PIXEL(3)
 
-                if(pixels & 0x08 && x + 4 >= 0)
+                if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
                     CHECK_PIXEL(4)
 
-                if(pixels & 0x04 && x + 5 >= 0)
+                if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
                     CHECK_PIXEL(5)
 
-                if(pixels & 0x02 && x + 6 >= 0)
+                if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
                     CHECK_PIXEL(6)
 
-                if(pixels & 0x01 && x + 7 >= 0)
+                if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
                     CHECK_PIXEL(7)
 
-                if(pixels2 & 0x80 && x + 8 >= 0)
+                if(pixels2 & 0x80 && x + 8 >= 0 && x + 8 < 256)
                     CHECK_PIXEL(8)
 
-                if(pixels2 & 0x40 && x + 9 >= 0)
+                if(pixels2 & 0x40 && x + 9 >= 0 && x + 9 < 256)
                     CHECK_PIXEL(9)
 
-                if(pixels2 & 0x20 && x + 10 >= 0)
+                if(pixels2 & 0x20 && x + 10 >= 0 && x + 10 < 256)
                     CHECK_PIXEL(10)
 
-                if(pixels2 & 0x10 && x + 11 >= 0)
+                if(pixels2 & 0x10 && x + 11 >= 0 && x + 11 < 256)
                     CHECK_PIXEL(11)
 
-                if(pixels2 & 0x08 && x + 12 >= 0)
+                if(pixels2 & 0x08 && x + 12 >= 0 && x + 12 < 256)
                     CHECK_PIXEL(12)
 
-                if(pixels2 & 0x04 && x + 13 >= 0)
+                if(pixels2 & 0x04 && x + 13 >= 0 && x + 13 < 256)
                     CHECK_PIXEL(13)
 
-                if(pixels2 & 0x02 && x + 14 >= 0)
+                if(pixels2 & 0x02 && x + 14 >= 0 && x + 14 < 256)
                     CHECK_PIXEL(14)
 
-                if(pixels2 & 0x01 && x + 15 >= 0)
+                if(pixels2 & 0x01 && x + 15 >= 0 && x + 15 < 256)
                     CHECK_PIXEL(15)
             }
             continue;
         }
 
-        if(pattern_size == 8)   {
-            if(pixels & 0x80 && x >= 0)
+        if(pattern_size == 8) {
+            if(pixels & 0x80 && x >= 0 && x < 256)
                 DRAW_PIXEL(0)
 
-            if(pixels & 0x40 && x + 1 >= 0)
+            if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
                 DRAW_PIXEL(1)
 
-            if(pixels & 0x20 && x + 2 >= 0)
+            if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
                 DRAW_PIXEL(2)
 
-            if(pixels & 0x10 && x + 3 >= 0)
+            if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
                 DRAW_PIXEL(3)
 
-            if(pixels & 0x08 && x + 4 >= 0)
+            if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
                 DRAW_PIXEL(4)
 
-            if(pixels & 0x04 && x + 5 >= 0)
+            if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
                 DRAW_PIXEL(5)
 
-            if(pixels & 0x02 && x + 6 >= 0)
+            if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
                 DRAW_PIXEL(6)
 
-            if(pixels & 0x01 && x + 7 >= 0)
+            if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
                 DRAW_PIXEL(7)
         }
-        else    {
-            if(pixels & 0x80 && x >= 0)
+        else {
+            if(pixels & 0x80 && x >= 0 && x < 256)
                 DRAW_PIXEL(0)
 
-            if(pixels & 0x40 && x + 1 >= 0)
+            if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
                 DRAW_PIXEL(1)
 
-            if(pixels & 0x20 && x + 2 >= 0)
+            if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
                 DRAW_PIXEL(2)
 
-            if(pixels & 0x10 && x + 3 >= 0)
+            if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
                 DRAW_PIXEL(3)
 
-            if(pixels & 0x08 && x + 4 >= 0)
+            if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
                 DRAW_PIXEL(4)
 
-            if(pixels & 0x04 && x + 5 >= 0)
+            if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
                 DRAW_PIXEL(5)
 
-            if(pixels & 0x02 && x + 6 >= 0)
+            if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
                 DRAW_PIXEL(6)
 
-            if(pixels & 0x01 && x + 7 >= 0)
+            if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
                 DRAW_PIXEL(7)
 
-            if(pixels2 & 0x80 && x + 8 >= 0)
+            if(pixels2 & 0x80 && x + 8 >= 0 && x + 8 < 256)
                 DRAW_PIXEL(8)
 
-            if(pixels2 & 0x40 && x + 9 >= 0)
+            if(pixels2 & 0x40 && x + 9 >= 0 && x + 9 < 256)
                 DRAW_PIXEL(9)
 
-            if(pixels2 & 0x20 && x + 10 >= 0)
+            if(pixels2 & 0x20 && x + 10 >= 0 && x + 10 < 256)
                 DRAW_PIXEL(10)
 
-            if(pixels2 & 0x10 && x + 11 >= 0)
+            if(pixels2 & 0x10 && x + 11 >= 0 && x + 11 < 256)
                 DRAW_PIXEL(11)
 
-            if(pixels2 & 0x08 && x + 12 >= 0)
+            if(pixels2 & 0x08 && x + 12 >= 0 && x + 12 < 256)
                 DRAW_PIXEL(12)
 
-            if(pixels2 & 0x04 && x + 13 >= 0)
+            if(pixels2 & 0x04 && x + 13 >= 0 && x + 13 < 256)
                 DRAW_PIXEL(13)
 
-            if(pixels2 & 0x02 && x + 14 >= 0)
+            if(pixels2 & 0x02 && x + 14 >= 0 && x + 14 < 256)
                 DRAW_PIXEL(14)
 
-            if(pixels2 & 0x01 && x + 15 >= 0)
+            if(pixels2 & 0x01 && x + 15 >= 0 && x + 15 < 256)
                 DRAW_PIXEL(15)
         }
     }
 
-    if(!(smsvdp.status & 0x40))  {
-        if(count == 5)  {
+    if(!(smsvdp.status & 0x40)) {
+        if(count == 5) {
             /* Set the 5 sprites flag and the fifth sprite bits */
             smsvdp.status |= 0x40 | ((i - 1) & 0x1F);
         }
-        else if(y == 0xD0)  {
+        else if(y == 0xD1) {
             /* Set the fifth sprite bits to the last sprite displayed */
             smsvdp.status |= (i & 0x1F);
         }
-        else    {
+        else {
+            /* Otherwise, set the fifth sprite bits to the last sprite */
+            smsvdp.status |= 0x1F;
+        }
+    }
+}
+
+void tms9918a_m023_skip_spr(int line) {
+    static uint8 col_tab[256];
+    uint8 *sat, *sprite_gen;
+    int i, pattern_size, size_shift, tmp, pixels, pixels2 = 0;
+    int count = 0, x, y = 0, pattern, color;
+
+    /* See if all the flags we can affect are already set. If so, we don't need
+       to go any further. */
+    if((smsvdp.status & 0x60) == 0x60)
+        return;
+
+    /* First of all, clear out our colision table */
+    memset(col_tab, 0, 256);
+
+    sat = &smsvdp.vram[(smsvdp.regs[5] & 0x7F) << 7];
+    sprite_gen = &smsvdp.vram[(smsvdp.regs[6] & 0x07) << 11];
+
+    if(smsvdp.regs[1] & 0x01)
+        size_shift = 1;
+    else
+        size_shift = 0;
+
+    if(smsvdp.regs[1] & 0x02)
+        pattern_size = 16;
+    else
+        pattern_size = 8;
+
+    for(i = 0; i < 32; ++i) {
+        y = sat[i << 2] + 1;
+
+        if(y == 0xD1)
+            /* End of list marker */
+            return;
+        else if(line < y)
+            continue;
+        else if(y + (pattern_size << size_shift) - 1 < line)
+            continue;
+        else if(++count == 5)
+            break;
+
+        x = sat[(i << 2) + 1];
+        pattern = sat[(i << 2) + 2];
+        color = sat[(i << 2) + 3];
+
+        if(color & 0x80)
+            x -= 32;
+
+        tmp = (line - y) >> size_shift;
+
+        if(pattern_size == 8) {
+            pixels = *(sprite_gen + (pattern << 3) + tmp);
+        }
+        else {
+            pixels = *(sprite_gen + ((pattern & 0xFC) << 3) + tmp);
+            pixels2 = *(sprite_gen + ((pattern & 0xFC) << 3) + tmp + 16);
+        }
+
+        if(pattern_size == 8) {
+            if(pixels & 0x80 && x >= 0 && x < 256)
+                CHECK_PIXEL(0)
+
+            if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
+                CHECK_PIXEL(1)
+
+            if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
+                CHECK_PIXEL(2)
+
+            if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
+                CHECK_PIXEL(3)
+
+            if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
+                CHECK_PIXEL(4)
+
+            if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
+                CHECK_PIXEL(5)
+
+            if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
+                CHECK_PIXEL(6)
+
+            if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
+                CHECK_PIXEL(7)
+        }
+        else {
+            if(pixels & 0x80 && x >= 0 && x < 256)
+                CHECK_PIXEL(0)
+
+            if(pixels & 0x40 && x + 1 >= 0 && x + 1 < 256)
+                CHECK_PIXEL(1)
+
+            if(pixels & 0x20 && x + 2 >= 0 && x + 2 < 256)
+                CHECK_PIXEL(2)
+
+            if(pixels & 0x10 && x + 3 >= 0 && x + 3 < 256)
+                CHECK_PIXEL(3)
+
+            if(pixels & 0x08 && x + 4 >= 0 && x + 4 < 256)
+                CHECK_PIXEL(4)
+
+            if(pixels & 0x04 && x + 5 >= 0 && x + 5 < 256)
+                CHECK_PIXEL(5)
+
+            if(pixels & 0x02 && x + 6 >= 0 && x + 6 < 256)
+                CHECK_PIXEL(6)
+
+            if(pixels & 0x01 && x + 7 >= 0 && x + 7 < 256)
+                CHECK_PIXEL(7)
+
+            if(pixels2 & 0x80 && x + 8 >= 0 && x + 8 < 256)
+                CHECK_PIXEL(8)
+
+            if(pixels2 & 0x40 && x + 9 >= 0 && x + 9 < 256)
+                CHECK_PIXEL(9)
+
+            if(pixels2 & 0x20 && x + 10 >= 0 && x + 10 < 256)
+                CHECK_PIXEL(10)
+
+            if(pixels2 & 0x10 && x + 11 >= 0 && x + 11 < 256)
+                CHECK_PIXEL(11)
+
+            if(pixels2 & 0x08 && x + 12 >= 0 && x + 12 < 256)
+                CHECK_PIXEL(12)
+
+            if(pixels2 & 0x04 && x + 13 >= 0 && x + 13 < 256)
+                CHECK_PIXEL(13)
+
+            if(pixels2 & 0x02 && x + 14 >= 0 && x + 14 < 256)
+                CHECK_PIXEL(14)
+
+            if(pixels2 & 0x01 && x + 15 >= 0 && x + 15 < 256)
+                CHECK_PIXEL(15)
+        }
+        continue;
+    }
+
+    if(!(smsvdp.status & 0x40)) {
+        if(count == 5) {
+            /* Set the 5 sprites flag and the fifth sprite bits */
+            smsvdp.status |= 0x40 | ((i - 1) & 0x1F);
+        }
+        else if(y == 0xD1) {
+            /* Set the fifth sprite bits to the last sprite displayed */
+            smsvdp.status |= (i & 0x1F);
+        }
+        else {
             /* Otherwise, set the fifth sprite bits to the last sprite */
             smsvdp.status |= 0x1F;
         }

@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -26,7 +26,7 @@ cycles_done += 4;
 ++cpu->ir.b.l;
 FETCH_ARG8(inst);
 
-switch(inst)    {
+switch(inst) {
     case 0x00:  /* NOP */
     case 0x40:  /* LD B, B */
     case 0x49:  /* LD C, C */
@@ -84,7 +84,7 @@ switch(inst)    {
 
     case 0x24:  /* INC IxH */
     case 0x2C:  /* INC IxL */
-        OP_INC8(cpu->offset->bytes[((inst >> 3) & 0x01) ^ 0x01]);
+        OP_INC8(OREG8(inst >> 3));
         cycles_done += 4;
         goto out;
 
@@ -105,7 +105,7 @@ switch(inst)    {
 
     case 0x25:  /* DEC IxH */
     case 0x2D:  /* DEC IxL */
-        OP_DEC8(cpu->offset->bytes[((inst >> 3) & 0x01) ^ 0x01]);
+        OP_DEC8(OREG8(inst >> 3));
         cycles_done += 4;
         goto out;
 
@@ -127,7 +127,7 @@ switch(inst)    {
     case 0x26:  /* LD IxH, n */
     case 0x2E:  /* LD IxL, n */
         FETCH_ARG8(_value);
-        cpu->offset->bytes[((inst >> 3) & 0x01) ^ 0x01] = _value;
+        OREG8(inst >> 3) = _value;
         cycles_done += 7;
         goto out;
 
@@ -216,7 +216,7 @@ ADDIxOP:
     case 0x22:  /* LD (nn), Ix */
         FETCH_ARG16(_value);
         cpu->mwrite16(_value, cpu->offset->w);
-        cycles_done += 20;
+        cycles_done += 16;
         goto out;
 
     case 0x27:  /* DAA */
@@ -253,7 +253,7 @@ ADDIxOP:
     case 0x5D:  /* LD E, IxL */
     case 0x7C:  /* LD A, IxH */
     case 0x7D:  /* LD A, IxL */
-        REG8(inst >> 3) = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        REG8(inst >> 3) = OREG8(inst);
         cycles_done += 4;
         goto out;
 
@@ -277,7 +277,7 @@ ADDIxOP:
     case 0x6A:  /* LD IxL, D */
     case 0x6B:  /* LD IxL, E */
     case 0x6F:  /* LD IxL, A */
-        cpu->offset->bytes[((inst >> 3) & 0x01) ^ 0x01] = REG8(inst);
+        OREG8(inst >> 3) = REG8(inst);
         cycles_done += 4;
         goto out;
 
@@ -352,7 +352,7 @@ ADDIxOP:
 
     case 0x84:  /* ADD A, IxH */
     case 0x85:  /* ADD A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto ADDOP;
 
     case 0x88:  /* ADC A, B */
@@ -373,7 +373,7 @@ ADDIxOP:
 
     case 0x8C:  /* ADC A, IxH */
     case 0x8D:  /* ADC A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto ADCOP;
 
     case 0x90:  /* SUB A, B */
@@ -394,7 +394,7 @@ ADDIxOP:
 
     case 0x94:  /* SUB A, IxH */
     case 0x95:  /* SUB A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto SUBOP;
 
     case 0x98:  /* SBC A, B */
@@ -415,7 +415,7 @@ ADDIxOP:
 
     case 0x9C:  /* SBC A, IxH */
     case 0x9D:  /* SBC A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto SBCOP;
 
     case 0xA0:  /* AND A, B */
@@ -436,7 +436,7 @@ ADDIxOP:
 
     case 0xA4:  /* AND A, IxH */
     case 0xA5:  /* AND A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto ANDOP;
 
     case 0xA8:  /* XOR A, B */
@@ -457,7 +457,7 @@ ADDIxOP:
 
     case 0xAC:  /* XOR A, IxH */
     case 0xAD:  /* XOR A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto XOROP;
 
     case 0xB0:  /* OR A, B */
@@ -478,7 +478,7 @@ ADDIxOP:
 
     case 0xB4:  /* OR A, IxH */
     case 0xB5:  /* OR A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto OROP;
 
     case 0xB8:  /* CP A, B */
@@ -499,7 +499,7 @@ ADDIxOP:
 
     case 0xBC:  /* CP A, IxH */
     case 0xBD:  /* CP A, IxL */
-        _value = cpu->offset->bytes[(inst & 0x01) ^ 0x01];
+        _value = OREG8(inst);
         goto CPOP;
 
     case 0xC0:  /* RET NZ */

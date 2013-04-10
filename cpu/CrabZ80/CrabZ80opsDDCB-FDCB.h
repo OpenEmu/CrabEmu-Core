@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -29,7 +29,7 @@ FETCH_ARG8(_disp);
 FETCH_ARG8(inst);
 _tmp = cpu->mread(cpu->offset->w + _disp);
 
-switch(inst)    {
+switch(inst) {
     case 0x00:  /* RLC (Ix + d), B */
     case 0x01:  /* RLC (Ix + d), C */
     case 0x02:  /* RLC (Ix + d), D */
@@ -39,13 +39,13 @@ switch(inst)    {
     case 0x07:  /* RLC (Ix + d), A */
         _value = REG8(inst) = (uint8)((_tmp << 1) | (_tmp >> 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_value & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x06:  /* RLC (Ix + d) */
         _value = (uint8)((_tmp << 1) | (_tmp >> 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_value & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x08:  /* RRC (Ix + d), B */
@@ -58,13 +58,13 @@ switch(inst)    {
         _value = (uint8)((_tmp >> 1) | (_tmp << 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x0E:  /* RRC (Ix + d) */
         _value = (uint8)((_tmp >> 1) | (_tmp << 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x10:  /* RL (Ix + d), B */
@@ -77,13 +77,13 @@ switch(inst)    {
         _value = (uint8)((_tmp << 1) | (cpu->af.b.l & 0x01));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x16:  /* RL (Ix + d) */
         _value = (uint8)((_tmp << 1) | (cpu->af.b.l & 0x01));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x18:  /* RR (Ix + d), B */
@@ -96,13 +96,13 @@ switch(inst)    {
         _value = (uint8)((_tmp >> 1) | ((cpu->af.b.l & 0x01) << 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x1E:  /* RR (Ix + d) */
         _value = (uint8)((_tmp >> 1) | ((cpu->af.b.l & 0x01) << 7));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x20:  /* SLA (Ix + d), B */
@@ -115,13 +115,13 @@ switch(inst)    {
         _value = (uint8)(_tmp << 1);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x26:  /* SLA (Ix + d) */
         _value = (uint8)(_tmp << 1);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x28:  /* SRA (Ix + d), B */
@@ -134,13 +134,13 @@ switch(inst)    {
         _value = (uint8)((_tmp >> 1) | (_tmp & 0x80));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x2E:  /* SRA (Ix + d) */
         _value = (uint8)((_tmp >> 1) | (_tmp & 0x80));
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x30:  /* SLL (Ix + d), B */
@@ -153,13 +153,13 @@ switch(inst)    {
         _value = (uint8)((_tmp << 1) | 0x01);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x36:  /* SLL (Ix + d) */
         _value = (uint8)((_tmp << 1) | 0x01);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp >> 7);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x38:  /* SRL (Ix + d), B */
@@ -172,13 +172,13 @@ switch(inst)    {
         _value = (uint8)(_tmp >> 1);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
         REG8(inst) = _value;
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
         
     case 0x3E:  /* SRL (Ix + d) */
         _value = (uint8)(_tmp >> 1);
         cpu->af.b.l = ZSPXYtable[_value] | (_tmp & 0x01);
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x40:  /* BIT 0, (Ix + d) */
@@ -249,7 +249,7 @@ switch(inst)    {
             0x10 | (cpu->af.b.l & 0x01);
         _tmp = (cpu->offset->w + _disp) >> 8;
         cpu->af.b.l |= _tmp & 0x28;
-        cycles_done += 20;
+        cycles_done += 16;
         goto out;
 
     case 0x80:  /* RES 0, (Ix + d), B */
@@ -309,7 +309,7 @@ switch(inst)    {
     case 0xBD:  /* RES 7, (Ix + d), L */
     case 0xBF:  /* RES 7, (Ix + d), A */
         REG8(inst) = _value = _tmp & ~(1 << ((inst >> 3) & 0x07));
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0x86:  /* RES 0, (Ix + d) */
@@ -321,7 +321,7 @@ switch(inst)    {
     case 0xB6:  /* RES 6, (Ix + d) */
     case 0xBE:  /* RES 7, (Ix + d) */
         _value = _tmp & ~(1 << ((inst >> 3) & 0x07));
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0xC0:  /* SET 0, (Ix + d), B */
@@ -381,7 +381,7 @@ switch(inst)    {
     case 0xFD:  /* SET 7, (Ix + d), L */
     case 0xFF:  /* SET 7, (Ix + d), A */
         REG8(inst) = _value = _tmp | (1 << ((inst >> 3) & 0x07));
-        cycles_done += 23;
+        cycles_done += 19;
         goto writeResult;
 
     case 0xC6:  /* SET 0, (Ix + d) */
@@ -393,10 +393,8 @@ switch(inst)    {
     case 0xF6:  /* SET 6, (Ix + d) */
     case 0xFE:  /* SET 7, (Ix + d) */
         _value = _tmp | (1 << ((inst >> 3) & 0x07));
-        cycles_done += 23;
-        goto writeResult;
-}
-
+        cycles_done += 19;
 writeResult:
-cpu->mwrite(cpu->offset->w + _disp, _value);
-goto out;
+        cpu->mwrite(cpu->offset->w + _disp, _value);
+        goto out;
+}

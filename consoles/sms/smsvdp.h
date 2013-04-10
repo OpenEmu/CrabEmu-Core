@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -25,12 +25,6 @@
 
 CLINKAGE
 
-#ifndef _arch_dreamcast
-typedef uint32 sms_vdp_color_t;
-#else
-typedef uint16 sms_vdp_color_t;
-#endif
-
 /* Pattern structure */
 typedef struct smspat_s {
     /* Preconverted texture */
@@ -53,7 +47,7 @@ typedef struct smsvdp_s {
     /* Software palette, stored both in SMS and
        native formats (CRAM) */
     uint8 *cram;
-    sms_vdp_color_t *pal;
+    pixel_t *pal;
 
     /* Status flags */
     uint8 status;
@@ -80,7 +74,7 @@ typedef struct smsvdp_s {
     uint8 bg_prio[32];
 
     /* Internal Framebuffer - 256x256 pixels 32bpp or 16bpp */
-    sms_vdp_color_t *framebuffer;
+    pixel_t *framebuffer;
 
     /* Background alpha levels, used with the priority to determine if
        a given pixel is invisible or not */
@@ -114,6 +108,10 @@ typedef struct smsvdp_s {
     int yscroll_fine;
 } sms_vdp_t;
 
+#define SMS_VDP_FLAG_BYTES_WRITTEN  0x00000001
+#define SMS_VDP_FLAG_VSCROLL_CHG    0x00000002
+#define SMS_VDP_FLAG_LINE_INT       0x00000004
+
 extern void sms_vdp_update_cache(int pat);
 
 extern void sms_vdp_data_write(uint8 data);
@@ -126,7 +124,8 @@ extern uint8 sms_vdp_status_read(void);
 
 extern void sms_vdp_hcnt_latch(void);
 
-extern uint32 sms_vdp_execute(int line);
+extern uint32 sms_vdp_execute(int line, int skip);
+extern uint32 tms9918a_vdp_execute(int line, void (*irqfunc)(), int skip);
 extern void sms_vdp_dump_vram(const char *fn);
 
 extern int sms_vdp_init(int mode);
@@ -137,8 +136,9 @@ extern int sms_vdp_shutdown(void);
 #define SMS_VDP_MACHINE_SMS2 2
 extern void sms_vdp_set_vidmode(int mode, int machine);
 
-extern void sms_vdp_write_context(FILE *fp);
-extern void sms_vdp_read_context(FILE *fp);
+extern int sms_vdp_write_context(FILE *fp);
+extern int sms_vdp_read_context(const uint8 *buf);
+extern void sms_vdp_read_context_v1(FILE *fp);
 
 extern sms_vdp_t smsvdp;
 

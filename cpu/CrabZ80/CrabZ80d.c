@@ -25,40 +25,40 @@ static const char regs16[4][3] = { "BC", "DE", "HL", "SP" };
 static const char regs8[8][5] = { "B", "C", "D", "E", "H", "L", "(HL)", "A" };
 static const char cond[8][3] = { "NZ", "Z", "NC", "C", "PO", "PE", "P", "M" };
 
-static uint16 disasm_cb(char str[], CrabZ80_t *cpu, uint16 addr)    {
+static uint16 disasm_cb(char str[], CrabZ80_t *cpu, uint16 addr) {
     uint8 opcode = cpu->mread(addr++);
 
-    if(opcode < 0x08)   {
+    if(opcode < 0x08) {
         sprintf(str, "RLC %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x10)  {
+    else if(opcode < 0x10) {
         sprintf(str, "RRC %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x18)  {
+    else if(opcode < 0x18) {
         sprintf(str, "RL %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x20)  {
+    else if(opcode < 0x20) {
         sprintf(str, "RR %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x28)  {
+    else if(opcode < 0x28) {
         sprintf(str, "SLA %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x30)  {
+    else if(opcode < 0x30) {
         sprintf(str, "SRA %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x38)  {
+    else if(opcode < 0x38) {
         sprintf(str, "SLA %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x40)  {
+    else if(opcode < 0x40) {
         sprintf(str, "SRL %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x80)  {
+    else if(opcode < 0x80) {
         sprintf(str, "BIT %d, %s", (opcode & 0x38) >> 3, regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xC0)  {
+    else if(opcode < 0xC0) {
         sprintf(str, "RES %d, %s", (opcode & 0x38) >> 3, regs8[opcode & 0x07]);
     }
-    else    {
+    else {
         sprintf(str, "SET %d, %s", (opcode & 0x38) >> 3, regs8[opcode & 0x07]);
     }
 
@@ -76,71 +76,71 @@ static uint16 disasm_indexcb(char str[], CrabZ80_t *cpu, uint16 addr,
     else
         strcpy(reg, "IY");
 
-    if(opcode == 0x06)   {
+    if(opcode == 0x06) {
         sprintf(str, "RLC (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x0E)  {
+    else if(opcode == 0x0E) {
         sprintf(str, "RRC (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x16)  {
+    else if(opcode == 0x16) {
         sprintf(str, "RL (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x1E)  {
+    else if(opcode == 0x1E) {
         sprintf(str, "RR (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x26)  {
+    else if(opcode == 0x26) {
         sprintf(str, "SLA (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x2E)  {
+    else if(opcode == 0x2E) {
         sprintf(str, "SRA (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x36)  {
+    else if(opcode == 0x36) {
         sprintf(str, "SLA (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode == 0x3E)  {
+    else if(opcode == 0x3E) {
         sprintf(str, "SRL (%s + 0x%02X)", reg, offset);
     }
-    else if(opcode < 0x08)   {
+    else if(opcode < 0x08) {
         sprintf(str, "RLC (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x10)  {
+    else if(opcode < 0x10) {
         sprintf(str, "RRC (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x18)  {
+    else if(opcode < 0x18) {
         sprintf(str, "RL (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x20)  {
+    else if(opcode < 0x20) {
         sprintf(str, "RR (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x28)  {
+    else if(opcode < 0x28) {
         sprintf(str, "SLA (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x30)  {
+    else if(opcode < 0x30) {
         sprintf(str, "SRA (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x38)  {
+    else if(opcode < 0x38) {
         sprintf(str, "SLA (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x40)  {
+    else if(opcode < 0x40) {
         sprintf(str, "SRL (%s + 0x%02X), %s", reg, offset,
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x80)  {
+    else if(opcode < 0x80) {
         sprintf(str, "BIT %d, (%s + 0x%02X)", (opcode & 0x38) >> 3, reg,
                 offset);
     }
-    else if(opcode < 0xC0)  {
+    else if(opcode < 0xC0) {
         sprintf(str, "RES %d, (%s + 0x%02X), %s", (opcode & 0x38) >> 3, reg,
                 offset, regs8[opcode & 0x07]);
     }
-    else    {
+    else {
         sprintf(str, "SET %d, (%s + 0x%02X), %s", (opcode & 0x38) >> 3, reg,
                 offset, regs8[opcode & 0x07]);
     }
@@ -149,7 +149,7 @@ static uint16 disasm_indexcb(char str[], CrabZ80_t *cpu, uint16 addr,
 }
 
 static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
-                           uint8 prefix)    {
+                           uint8 prefix) {
     char reg[3];
     uint8 opcode = cpu->mread(addr++);
 
@@ -158,8 +158,8 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
     else
         strcpy(reg, "IY");
 
-    if(opcode < 0x40)   {
-        switch(opcode)  {
+    if(opcode < 0x40) {
+        switch(opcode) {
             case 0x09:
                 sprintf(str, "ADD %s, BC", reg);
                 break;
@@ -244,8 +244,8 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
                 addr = CrabZ80_disassemble(str, cpu, addr);
         }
     }
-    else if(opcode < 0x60)  {
-        switch(opcode & 0x07)   {
+    else if(opcode < 0x60) {
+        switch(opcode & 0x07) {
             case 0x04:
                 sprintf(str, "LD %s, %sh", regs8[(opcode & 0x38) >> 3], reg);
                 break;
@@ -263,7 +263,7 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
                 addr = CrabZ80_disassemble(str, cpu, addr);
         }
     }
-    else if(opcode < 0x64 || opcode == 0x67)  {
+    else if(opcode < 0x64 || opcode == 0x67) {
         sprintf(str, "LD %sh, %s", reg, regs8[opcode & 0x07]);
     }
     else if(opcode == 0x64) {
@@ -275,7 +275,7 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
     else if(opcode == 0x66) {
         sprintf(str, "LD H, (%s + 0x%02X)", reg, cpu->mread(addr++));
     }
-    else if(opcode < 0x6C || opcode == 0x6F)  {
+    else if(opcode < 0x6C || opcode == 0x6F) {
         sprintf(str, "LD %sl, %s", reg, regs8[opcode & 0x07]);
     }
     else if(opcode == 0x6C) {
@@ -290,12 +290,12 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
     else if(opcode == 0x76) {
         addr = CrabZ80_disassemble(str, cpu, addr);
     }
-    else if(opcode < 0x78)  {
+    else if(opcode < 0x78) {
         sprintf(str, "LD (%s + 0x%02X), %s", reg, cpu->mread(addr++),
                 regs8[opcode & 0x07]);
     }
-    else    {
-        switch(opcode)  {
+    else {
+        switch(opcode) {
             case 0x7C:
                 sprintf(str, "LD A, %sh", reg);
                 break;
@@ -436,10 +436,10 @@ static uint16 disasm_index(char str[], CrabZ80_t *cpu, uint16 addr,
     return addr;
 }
 
-static uint16 disasm_ed(char str[], CrabZ80_t *cpu, uint16 addr)    {
+static uint16 disasm_ed(char str[], CrabZ80_t *cpu, uint16 addr) {
     uint8 opcode = cpu->mread(addr++);
 
-    if(opcode < 0x40 || opcode == 0x77 || opcode == 0x7F)   {
+    if(opcode < 0x40 || opcode == 0x77 || opcode == 0x7F) {
         sprintf(str, "NOP [0xED%02X]", opcode);
     }
     else if(opcode == 0x47) {
@@ -460,8 +460,8 @@ static uint16 disasm_ed(char str[], CrabZ80_t *cpu, uint16 addr)    {
     else if(opcode == 0x6F) {
         sprintf(str, "RLD");
     }
-    else if(opcode < 0x80)  {
-        switch(opcode & 0x0F)   {
+    else if(opcode < 0x80) {
+        switch(opcode & 0x0F) {
             case 0x00:
             case 0x08:
                 if(opcode != 0x70)
@@ -575,21 +575,20 @@ static uint16 disasm_ed(char str[], CrabZ80_t *cpu, uint16 addr)    {
     else if(opcode == 0xBB) {
         sprintf(str, "OTDR");
     }
-    else    {
+    else {
         sprintf(str, "NOP [0xED%02X]", opcode);
     }
 
     return addr;
 }
 
-uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
+uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr) {
     uint8 opcode = cpu->mread(addr++);
 
-    if(opcode < 0x40)   {
-        switch(opcode & 0x07)   {
+    if(opcode < 0x40) {
+        switch(opcode & 0x07) {
             case 0x00:
-            {
-                switch(opcode)   {
+                switch(opcode) {
                     case 0x00:
                         sprintf(str, "NOP");
                         break;
@@ -623,26 +622,22 @@ uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
                         break;
                 }
                 break;
-            }
 
             case 0x01:
-            {
-                if(!(opcode & 0x08))    {
+                if(!(opcode & 0x08)) {
                     sprintf(str, "LD %s, 0x%04X", regs16[(opcode & 0xF0) >> 4],
                             cpu->mread(addr) | (cpu->mread(addr + 1) << 8));
                     addr += 2;
                 }
-                else    {
+                else {
                     sprintf(str, "ADD HL, %s", regs16[(opcode & 0xF0) >> 4]);
                     break;
                 }
                 break;
-            }
 
             case 0x02:
-            {
-                if(!(opcode & 0x08))    {
-                    switch(opcode & 0xF0)   {
+                if(!(opcode & 0x08)) {
+                    switch(opcode & 0xF0) {
                         case 0x00:
                         case 0x10:
                             sprintf(str, "LD (%s), A",
@@ -664,8 +659,8 @@ uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
                             break;
                     }
                 }
-                else    {
-                    switch(opcode & 0xF0)    {
+                else {
+                    switch(opcode & 0xF0) {
                         case 0x00:
                         case 0x10:
                             sprintf(str, "LD A, (%s)",
@@ -688,41 +683,31 @@ uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
                     }
                 }
                 break;
-            }
 
             case 0x03:
-            {
-                if(!(opcode & 0x08))    {
+                if(!(opcode & 0x08)) {
                     sprintf(str, "INC %s", regs16[(opcode & 0xF0) >> 4]);
                 }
-                else    {
+                else {
                     sprintf(str, "DEC %s", regs16[(opcode & 0xF0) >> 4]);
                 }
                 break;
-            }
 
             case 0x04:
-            {
                 sprintf(str, "INC %s", regs8[(opcode & 0xF8) >> 3]);
                 break;
-            }
 
             case 0x05:
-            {
                 sprintf(str, "DEC %s", regs8[(opcode & 0xF8) >> 3]);
                 break;
-            }
 
             case 0x06:
-            {
                 sprintf(str, "LD %s, 0x%02X", regs8[(opcode & 0xF8) >> 3],
                         cpu->mread(addr++));
                 break;
-            }
 
             case 0x07:
-            {
-                switch(opcode)  {
+                switch(opcode) {
                     case 0x07:
                         sprintf(str, "RLCA");
                         break;
@@ -756,38 +741,37 @@ uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
                         break;
                 }
                 break;
-            }
         }
     }
     else if(opcode == 0x76) {
         sprintf(str, "HALT");
     }
-    else if(opcode < 0x80)  {
+    else if(opcode < 0x80) {
         sprintf(str, "LD %s, %s", regs8[(opcode & 0x38) >> 3],
                 regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x88)  {
+    else if(opcode < 0x88) {
         sprintf(str, "ADD A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x90)  {
+    else if(opcode < 0x90) {
         sprintf(str, "ADC A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0x98)  {
+    else if(opcode < 0x98) {
         sprintf(str, "SUB A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xA0)  {
+    else if(opcode < 0xA0) {
         sprintf(str, "SBC A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xA8)  {
+    else if(opcode < 0xA8) {
         sprintf(str, "AND A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xB0)  {
+    else if(opcode < 0xB0) {
         sprintf(str, "XOR A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xB8)  {
+    else if(opcode < 0xB8) {
         sprintf(str, "OR A, %s", regs8[opcode & 0x07]);
     }
-    else if(opcode < 0xC0)  {
+    else if(opcode < 0xC0) {
         sprintf(str, "CP A, %s", regs8[opcode & 0x07]);
     }
     else if(opcode == 0xC3) {
@@ -866,8 +850,8 @@ uint16 CrabZ80_disassemble(char str[], CrabZ80_t *cpu, uint16 addr)   {
     else if(opcode == 0xFE) {
         sprintf(str, "CP A, 0x%02X", cpu->mread(addr++));
     }
-    else    {
-        switch(opcode & 0x0F)   {
+    else {
+        switch(opcode & 0x0F) {
             case 0x00:
             case 0x08:
                 sprintf(str, "RET %s", cond[(opcode & 0x38) >> 3]);

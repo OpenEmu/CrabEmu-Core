@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2008 Lawrence Sebald
+    Copyright (C) 2008, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -27,7 +27,8 @@ CLINKAGE
 /* Support code for detecting roms that their mapper is not easily detected
    otherwise. */
 
-extern int sms_find_mapper(const uint8 *rom, uint32 len);
+extern uint32 sms_find_mapper(const uint8 *rom, uint32 len, uint32 *rcrc,
+                              uint32 *radler);
 
 ENDCLINK
 

@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009 Lawrence Sebald
+    Copyright (C) 2009, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -24,13 +24,19 @@
 
 CLINKAGE
 
+#include <stdio.h>
+
 extern void sms_mem_remap_page2_castle(void);
+extern void sms_mem_remap_page0_twmsxa(void);
 
 extern uint8 sms_mem_sg_mread(uint16 addr);
 extern void sms_mem_sg_mwrite(uint16 addr, uint8 data);
 
 extern uint16 sms_mem_sg_mread16(uint16 addr);
 extern void sms_mem_sg_mwrite16(uint16 addr, uint16 data);
+
+extern int sms_mem_8kb_write_context(FILE *fp);
+extern int sms_mem_8kb_read_mem(const uint8 *buf);
 
 ENDCLINK
 

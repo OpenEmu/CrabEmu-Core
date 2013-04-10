@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2007, 2009 Lawrence Sebald
+    Copyright (C) 2005, 2007, 2009, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -24,25 +24,27 @@
 
 CLINKAGE
 
+#include <stdio.h>
+
 extern int sms_init(int video_system, int region);
 extern int sms_reset(void);
 extern void sms_soft_reset(void);
 extern int sms_shutdown(void);
 
-extern int sms_frame(int run);
+extern int sms_frame(int run, int skip);
 
-extern void gui_set_aspect(float x, float y);
-extern void gui_set_title(const char *str);
-
-extern void sms_button_pressed(int button);
-extern void sms_button_released(int button);
+extern void sms_button_pressed(int player, int button);
+extern void sms_button_released(int player, int button);
 
 extern void sms_set_console(int console);
+
+extern int sms_psg_write_context(FILE *fp);
+extern int sms_psg_read_context(const uint8 *buf);
 
 extern int sms_save_state(const char *filename);
 extern int sms_load_state(const char *filename);
 
-/* Button defines */
+/* Old button defines. These define the raw bits used for the data. */
 #define SMS_PAD1_UP     0x0001
 #define SMS_PAD1_DOWN   0x0002
 #define SMS_PAD1_LEFT   0x0004
@@ -57,6 +59,18 @@ extern int sms_load_state(const char *filename);
 #define SMS_PAD2_B      0x0800
 #define SMS_RESET       0x1000
 #define GG_START        0xFFFF
+
+/* New button defines. These should be fed into the button parameter of
+   sms_button_pressed() and sms_button_released(). */
+#define SMS_UP              0
+#define SMS_DOWN            1
+#define SMS_LEFT            2
+#define SMS_RIGHT           3
+#define SMS_BUTTON_1        4
+#define SMS_BUTTON_2        5
+#define GAMEGEAR_START      6
+#define SMS_QUIT            7   /* This one is ignored... */
+#define SMS_CONSOLE_RESET   8
 
 #define SMS_PAD1_TL     SMS_PAD1_A
 #define SMS_PAD1_TR     SMS_PAD1_B
@@ -78,8 +92,8 @@ extern int sms_load_state(const char *filename);
 #define SMS_REGION_EXPORT   0x02
 
 /* Video Standards */
-#define SMS_VIDEO_NTSC 0x10
-#define SMS_VIDEO_PAL  0x20
+#define SMS_VIDEO_NTSC VIDEO_NTSC
+#define SMS_VIDEO_PAL  VIDEO_PAL
 
 #define SMS_CYCLES_PER_LINE 228
 

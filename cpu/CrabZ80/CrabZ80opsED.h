@@ -25,7 +25,7 @@
 ++cpu->ir.b.l;
 FETCH_ARG8(inst);
 
-switch(inst)    {
+switch(inst) {
     case 0x00:  /* All undefined ED-prefixed opcodes are essentially 2 NOPs. */
     case 0x01:
     case 0x02:
@@ -214,7 +214,7 @@ switch(inst)    {
     case 0x60:  /* IN H, (C) */
     case 0x68:  /* IN L, (C) */
     case 0x78:  /* IN A, (C) */
-        REG8(inst >> 3) = _value = cpu->pread(cpu->bc.b.l);
+        REG8(inst >> 3) = _value = cpu->pread(cpu->bc.w);
 
 INCOP:
         cpu->af.b.l = ZSPXYtable[_value] | (cpu->af.b.l & 0x01);
@@ -222,7 +222,7 @@ INCOP:
         goto out;
 
     case 0x70:  /* IN (C) */
-        _value = cpu->pread(cpu->bc.b.l);
+        _value = cpu->pread(cpu->bc.w);
         goto INCOP;
 
     case 0x41:  /* OUT (C), B */
@@ -235,7 +235,7 @@ INCOP:
         _value = REG8(inst >> 3);
 
 OUTCOP:
-        cpu->pwrite(cpu->bc.b.l, _value);
+        cpu->pwrite(cpu->bc.w, _value);
         cycles_done += 12;
         goto out;
 
@@ -427,7 +427,7 @@ OUTDOP:
         goto out;
 
     case 0xB0:  /* LDIR */
-        if(cpu->bc.w != 1)  {
+        if(cpu->bc.w != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }
@@ -440,7 +440,7 @@ OUTDOP:
         goto out;
 
     case 0xB2:  /* INIR */
-        if(cpu->bc.b.h != 1)    {
+        if(cpu->bc.b.h != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }
@@ -448,7 +448,7 @@ OUTDOP:
         goto INIOP;
 
     case 0xB3:  /* OTIR */
-        if(cpu->bc.b.h != 1)    {
+        if(cpu->bc.b.h != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }
@@ -456,7 +456,7 @@ OUTDOP:
         goto OUTIOP;
 
     case 0xB8:  /* LDDR */
-        if(cpu->bc.w != 1)  {
+        if(cpu->bc.w != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }
@@ -469,7 +469,7 @@ OUTDOP:
         goto out;
 
     case 0xBA:  /* INDR */
-        if(cpu->bc.b.h != 1)    {
+        if(cpu->bc.b.h != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }
@@ -477,7 +477,7 @@ OUTDOP:
         goto INDOP;
 
     case 0xBB:  /* OTDR */
-        if(cpu->bc.b.h != 1)    {
+        if(cpu->bc.b.h != 1) {
             cpu->pc.w -= 2;
             cycles_done += 5;
         }

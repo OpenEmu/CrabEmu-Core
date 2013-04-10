@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2007, 2008 Lawrence Sebald
+    Copyright (C) 2005, 2007, 2008, 2012, 2013 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -24,17 +24,21 @@
 
 CLINKAGE
 
-int sound_init(void);
+int sound_init(int channels, int region);
 void sound_shutdown(void);
 #ifndef _arch_dreamcast
 void sound_update_buffer(int16 *buf, int length);
 #else
-void sound_update_buffer_noint(int16 *bufl, int16 *bufr,
+void sound_update_buffer_noint(int16 *bufl, int16 *bufr, int16 *fmbuf,
                                int length);
 #endif
 void sound_reset_buffer(void);
 void sound_pause(void);
 void sound_unpause(void);
+
+#ifndef _arch_dreamcast
+void sound_wait(void);
+#endif
 
 ENDCLINK
 

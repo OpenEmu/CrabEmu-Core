@@ -33,7 +33,7 @@ void eeprom93c46_init(void) {
     e93c46.bit = 0;
 }
 
-void eeprom93c46_reset(void)    {
+void eeprom93c46_reset(void) {
     e93c46.enabled = 0;
     e93c46.lines = EEPROM93c46_LINE_DATA_OUT;
     e93c46.readwrite = 0;
@@ -42,7 +42,7 @@ void eeprom93c46_reset(void)    {
     e93c46.bit = 0;
 }
 
-void eeprom93c46_ctl_write(uint8 data)  {
+void eeprom93c46_ctl_write(uint8 data) {
     if(data & 0x80) {
         eeprom93c46_reset();
     }
@@ -50,19 +50,19 @@ void eeprom93c46_ctl_write(uint8 data)  {
     if(data & 0x08) {
         e93c46.enabled = 1;
     }
-    else    {
+    else {
         e93c46.enabled = 0;
     }
 }
 
-uint8 eeprom93c46_read(void)    {
+uint8 eeprom93c46_read(void) {
     return (e93c46.lines & EEPROM93c46_LINE_CS) | EEPROM93c46_LINE_CLOCK |
         ((e93c46.lines & EEPROM93c46_LINE_DATA_OUT) >> 3);
 }
 
-void eeprom93c46_write(uint8 data)  {
-    if(!(data & EEPROM93c46_LINE_CS))   {
-        if(e93c46.lines & EEPROM93c46_LINE_CS)  {
+void eeprom93c46_write(uint8 data) {
+    if(!(data & EEPROM93c46_LINE_CS)) {
+        if(e93c46.lines & EEPROM93c46_LINE_CS) {
             e93c46.mode = EEPROM93c46_MODE_START;
         }
 
@@ -72,13 +72,13 @@ void eeprom93c46_write(uint8 data)  {
 
     /* If the clock goes from low to high, perform magic! */
     if(data & EEPROM93c46_LINE_CLOCK &&
-       !(e93c46.lines & EEPROM93c46_LINE_CLOCK))    {
+       !(e93c46.lines & EEPROM93c46_LINE_CLOCK)) {
         e93c46.lines = (data & 0x07) |
             (e93c46.lines & EEPROM93c46_LINE_DATA_OUT);
 
-        if(e93c46.mode == EEPROM93c46_MODE_START)   {
+        if(e93c46.mode == EEPROM93c46_MODE_START) {
             /* Check if the Data In bit is set */
-            if(!(data & EEPROM93c46_LINE_DATA_IN))  {
+            if(!(data & EEPROM93c46_LINE_DATA_IN)) {
                 return;
             }
 
@@ -92,11 +92,11 @@ void eeprom93c46_write(uint8 data)  {
         else if(e93c46.mode == EEPROM93c46_MODE_OPCODE) {
             e93c46.opcode = (e93c46.opcode << 1) | (data & 0x01);
 
-            if(++e93c46.bit == 8)   {
+            if(++e93c46.bit == 8) {
                 int op = (e93c46.opcode & 0xC0) >> 6;
 
-                if(op == 0x00)  {
-                    if((e93c46.opcode & 0x30) == 0x30)  {
+                if(op == 0x00) {
+                    if((e93c46.opcode & 0x30) == 0x30) {
                         /* EWEN opcode */
                         e93c46.mode = EEPROM93c46_MODE_DONE;
                         e93c46.readwrite = 1;
@@ -118,7 +118,7 @@ void eeprom93c46_write(uint8 data)  {
 
                         return;
                     }
-                    else    {
+                    else {
                         /* WRAL opcode */
                         e93c46.mode = EEPROM93c46_MODE_WRITE;
                         e93c46.bit = 0;
@@ -151,21 +151,21 @@ void eeprom93c46_write(uint8 data)  {
                 }
             }
         }
-        else if(e93c46.mode == EEPROM93c46_MODE_WRITE)  {
+        else if(e93c46.mode == EEPROM93c46_MODE_WRITE) {
             e93c46.data_in = (e93c46.data_in << 1) | (data & 0x01);
-            if(++e93c46.bit < 16)   {
+            if(++e93c46.bit < 16) {
                 return;
             }
-            else if(!e93c46.readwrite)  {
+            else if(!e93c46.readwrite) {
                 e93c46.mode = EEPROM93c46_MODE_DONE;
                 e93c46.lines |= EEPROM93c46_LINE_DATA_OUT;
                 return;
             }
-            else    {
+            else {
                 e93c46.data_in |= (data & 0x01) << (16 - e93c46.bit);
 
                 /* Was it a WRITE or a WRITE ALL instruction? */
-                if(e93c46.opcode & 0x40)    {
+                if(e93c46.opcode & 0x40) {
                     /* It was a WRITE instruction */
                     e93c46.data[e93c46.opcode & 0x3F] = e93c46.data_in;
                     e93c46.lines |= EEPROM93c46_LINE_DATA_OUT;
@@ -173,7 +173,7 @@ void eeprom93c46_write(uint8 data)  {
 
                     return;
                 }
-                else    {
+                else {
                     /* It was a WRITE ALL instruction */
                     int i;
 
@@ -187,14 +187,14 @@ void eeprom93c46_write(uint8 data)  {
                 }
             }
         }
-        else if(e93c46.mode == EEPROM93c46_MODE_READ)   {
+        else if(e93c46.mode == EEPROM93c46_MODE_READ) {
             ++e93c46.bit;
 
             if(e93c46.data[e93c46.opcode & 0x3F] &
-               (1 << (16 - e93c46.bit)))    {
+               (1 << (16 - e93c46.bit))) {
                e93c46.lines |= EEPROM93c46_LINE_DATA_OUT;
             }
-            else    {
+            else {
                 e93c46.lines &= 0x07;
             }
 

@@ -40,10 +40,14 @@
 #include "sound.h"
 #include "smsvdp.h"
 #include "smsz80.h"
+#include "rom.h"
 
 #define SAMPLERATE 44100
 
 @interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient>
+{
+    NSString *romName;
+}
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 - (int)crabButtonForSG1000Button:(OESG1000Button)button;
 @end
@@ -86,7 +90,7 @@ static OERingBuffer *ringBuffer;
     //DLog(@"Executing");
     //Get a reference to the emulator
     [bufLock lock];
-    oldrun = sms_frame(oldrun);
+    oldrun = sms_frame(oldrun, 0);
     [bufLock unlock];
 }
 
@@ -96,11 +100,26 @@ static OERingBuffer *ringBuffer;
 
 - (BOOL)loadFileAtPath:(NSString*)path
 {
+    romName = [path copy];
+    int console = rom_detect_console([path UTF8String]);
     DLog(@"Loaded File");
     //TODO: add choice NTSC/PAL
     if(sms_init(SMS_VIDEO_NTSC, SMS_REGION_DOMESTIC)) return NO;
     
-    if(sms_mem_load_rom([path UTF8String])) return NO;
+    if(sms_mem_load_rom([path UTF8String], console)) return NO;
+    
+    NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
+    
+    NSString *batterySavesDirectory = [self batterySavesDirectoryPath];
+    
+    if([batterySavesDirectory length] != 0)
+    {
+        [[NSFileManager defaultManager] createDirectoryAtPath:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:NULL];
+        
+        NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
+        
+        sms_read_cartram_from_file([filePath UTF8String]);
+    }
 
     return YES;
 }
@@ -111,7 +130,22 @@ static OERingBuffer *ringBuffer;
 
 - (void)stopEmulation
 {
-    sms_write_cartram_to_file();
+    NSString *path = romName;
+    NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
+    
+    NSString *batterySavesDirectory = [self batterySavesDirectoryPath];
+    
+    if([batterySavesDirectory length] != 0)
+    {
+        [[NSFileManager defaultManager] createDirectoryAtPath:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:NULL];
+        
+        NSLog(@"Trying to save SRAM");
+        
+        NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
+        
+        sms_write_cartram_to_file([filePath UTF8String]);
+    }
+    
     [super stopEmulation];
 }
 
@@ -189,7 +223,7 @@ void sound_update_buffer(signed short *buf, int length)
     [ringBuffer write:buf maxLength:length];
 }
 
-int sound_init(void)
+int sound_init(int channels, int region)
 {
     return 0;
 }
@@ -221,15 +255,15 @@ void gui_set_title(const char *str)
 
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 {
-    int btn = 0;
+    int btn = -1;
     switch(button)
     {
-        case OESMSButtonUp    : btn = (player == 1 ? SMS_PAD1_UP    : SMS_PAD2_UP);    break;
-        case OESMSButtonDown  : btn = (player == 1 ? SMS_PAD1_DOWN  : SMS_PAD2_DOWN);  break;
-        case OESMSButtonLeft  : btn = (player == 1 ? SMS_PAD1_LEFT  : SMS_PAD2_LEFT);  break;
-        case OESMSButtonRight : btn = (player == 1 ? SMS_PAD1_RIGHT : SMS_PAD2_RIGHT); break;
-        case OESMSButtonA     : btn = (player == 1 ? SMS_PAD1_A     : SMS_PAD2_A);     break;
-        case OESMSButtonB     : btn = (player == 1 ? SMS_PAD1_B     : SMS_PAD2_B);     break;
+        case OESMSButtonUp    : btn = SMS_UP;    break;
+        case OESMSButtonDown  : btn = SMS_DOWN;  break;
+        case OESMSButtonLeft  : btn = SMS_LEFT;  break;
+        case OESMSButtonRight : btn = SMS_RIGHT; break;
+        case OESMSButtonA     : btn = SMS_BUTTON_1;     break;
+        case OESMSButtonB     : btn = SMS_BUTTON_2;     break;
         default : break;
     }
     
@@ -238,16 +272,16 @@ void gui_set_title(const char *str)
 
 - (int)crabButtonForButton:(OEGGButton)button;
 {
-    int btn = 0;
+    int btn = -1;
     switch(button)
     {
-        case OEGGButtonUp:    btn = SMS_PAD1_UP;     break;
-        case OEGGButtonDown:  btn = SMS_PAD1_DOWN;   break;
-        case OEGGButtonLeft:  btn = SMS_PAD1_LEFT;   break;
-        case OEGGButtonRight: btn = SMS_PAD1_RIGHT;  break;
-        case OEGGButtonA:     btn = SMS_PAD1_A;      break;
-        case OEGGButtonB:     btn = SMS_PAD1_B;      break;
-        case OEGGButtonStart: btn = GG_START;        break;
+        case OEGGButtonUp:    btn = SMS_UP;     break;
+        case OEGGButtonDown:  btn = SMS_DOWN;   break;
+        case OEGGButtonLeft:  btn = SMS_LEFT;   break;
+        case OEGGButtonRight: btn = SMS_RIGHT;  break;
+        case OEGGButtonA:     btn = SMS_BUTTON_1;      break;
+        case OEGGButtonB:     btn = SMS_BUTTON_2;      break;
+        case OEGGButtonStart: btn = GAMEGEAR_START;        break;
         default : break;
     }
     
@@ -256,15 +290,15 @@ void gui_set_title(const char *str)
 
 - (int)crabButtonForSG1000Button:(OESG1000Button)button;
 {
-    int btn = 0;
+    int btn = -1;
     switch(button)
     {
-        case OESG1000ButtonUp:    btn = SMS_PAD1_UP;     break;
-        case OESG1000ButtonDown:  btn = SMS_PAD1_DOWN;   break;
-        case OESG1000ButtonLeft:  btn = SMS_PAD1_LEFT;   break;
-        case OESG1000ButtonRight: btn = SMS_PAD1_RIGHT;  break;
-        case OESG1000Button1:     btn = SMS_PAD1_A;      break;
-        case OESG1000Button2:     btn = SMS_PAD1_B;      break;
+        case OESG1000ButtonUp:    btn = SMS_UP;     break;
+        case OESG1000ButtonDown:  btn = SMS_DOWN;   break;
+        case OESG1000ButtonLeft:  btn = SMS_LEFT;   break;
+        case OESG1000ButtonRight: btn = SMS_RIGHT;  break;
+        case OESG1000Button1:     btn = SMS_BUTTON_1;      break;
+        case OESG1000Button2:     btn = SMS_BUTTON_2;      break;
         default : break;
     }
     
@@ -274,27 +308,27 @@ void gui_set_title(const char *str)
 - (oneway void)didPushGGButton:(OEGGButton)button;
 {
     int btn = [self crabButtonForButton:button];
-    if(btn > 0) sms_button_pressed(btn);
+    if(btn > -1) sms_button_pressed(1, btn);
 }
 
 - (oneway void)didReleaseGGButton:(OEGGButton)button;
 {
     int btn = [self crabButtonForButton:button];
-    if(btn > 0) sms_button_released(btn);
+    if(btn > -1) sms_button_released(1, btn);
 }
 
 - (oneway void)didPushSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForButton:button player:player];
     
-    if(btn > 0) sms_button_pressed(btn);
+    if(btn > -1) sms_button_pressed(player, btn);
 }
 
 - (oneway void)didReleaseSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForButton:button player:player];
     
-    if(btn > 0) sms_button_released(btn);
+    if(btn > -1) sms_button_released(player, btn);
 }
 
 - (oneway void)didPushSMSStartButton;
@@ -302,7 +336,7 @@ void gui_set_title(const char *str)
     if(sms_console != CONSOLE_GG)
         [self pauseEmulation:self];
     else
-        sms_button_pressed(GG_START);
+        sms_button_pressed(1, GAMEGEAR_START);
 }
 
 - (oneway void)didReleaseSMSStartButton;
@@ -312,24 +346,24 @@ void gui_set_title(const char *str)
 
 - (oneway void)didPushSMSResetButton;
 {
-    sms_button_pressed(SMS_RESET);
+    sms_button_pressed(1, SMS_CONSOLE_RESET);
 }
 
 - (oneway void)didReleaseSMSResetButton;
 {
-    sms_button_released(SMS_RESET);
+    sms_button_released(1, SMS_CONSOLE_RESET);
 }
 
 - (oneway void)didPushSG1000Button:(OESG1000Button)button;
 {
     int btn = [self crabButtonForSG1000Button:button];
-    if(btn > 0) sms_button_pressed(btn);
+    if(btn > -1) sms_button_pressed(1, btn);
 }
 
 - (oneway void)didReleaseSG1000Button:(OESG1000Button)button;
 {
     int btn = [self crabButtonForSG1000Button:button];
-    if(btn > 0) sms_button_released(btn);
+    if(btn > -1) sms_button_released(1, btn);
 }
 
 @end

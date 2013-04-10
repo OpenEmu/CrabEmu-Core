@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -24,7 +24,7 @@
 
 CLINKAGE
 
-typedef struct sn76489_struct   {
+typedef struct sn76489_struct {
     uint8 volume[4];
     uint16 tone[3];
     uint8 noise;
@@ -73,13 +73,19 @@ typedef struct sn76489_struct   {
 #define NOISE_LEFT  0x80
 
 /* Default settings */
+#define SN76489_NOISE_TAPPED_NORMAL 0x0006
+#define SN76489_NOISE_BITS_NORMAL   15
+
 #define SN76489_NOISE_TAPPED_SMS    0x0009
 #define SN76489_NOISE_BITS_SMS      16
 
-#define SN76489_NOISE_TAPPED_SG1000 0x0006
+#define SN76489_NOISE_TAPPED_SG1000 SN76489_NOISE_TAPPED_NORMAL
+#define SN76489_NOISE_BITS_SG1000   SN76489_NOISE_BITS_NORMAL
 
 int sn76489_init(sn76489_t *psg, float clock, float sample_rate,
                  uint16 noise_bits, uint16 tapped);
+int sn76489_reset(sn76489_t *psg, float clock, float sample_rate,
+                  uint16 noise_bits, uint16 tapped);
 void sn76489_write(sn76489_t *psg, uint8 byte);
 
 #ifndef _arch_dreamcast

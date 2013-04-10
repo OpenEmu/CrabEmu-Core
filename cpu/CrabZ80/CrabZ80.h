@@ -54,8 +54,8 @@ typedef uint32_t int32;
 
 CLINKAGE
 
-typedef union   {
-    struct  {
+typedef union {
+    struct {
 #ifdef __BIG_ENDIAN__
         uint8 h;
         uint8 l;
@@ -68,8 +68,8 @@ typedef union   {
     uint16 w;
 } CrabZ80_reg_t;
 
-typedef union   {
-    struct  {
+typedef union {
+    struct {
 #ifdef __BIG_ENDIAN__
         uint8 l;
         uint8 h;
@@ -83,17 +83,19 @@ typedef union   {
 
 #ifdef __BIG_ENDIAN__
 #define REG8(x) cpu->regs8[(x) & 0x07]
+#define OREG8(x) cpu->offset->bytes[(x) & 0x01]
 #else
 #define REG8(x) cpu->regs8[((x) & 0x07) ^ 0x01]
+#define OREG8(x) cpu->offset->bytes[((x) & 0x01) ^ 0x01]
 #endif
 
 #define REG16(x) cpu->regs16[(x) & 0x03]
 
-typedef struct CrabZ80_struct   {
-    union   {
+typedef struct CrabZ80_struct {
+    union {
         uint8 regs8[8];
         uint16 regs16[4];
-        struct  {
+        struct {
             CrabZ80_reg_t bc;
             CrabZ80_reg_t de;
             CrabZ80_reg_t hl;
@@ -112,9 +114,9 @@ typedef struct CrabZ80_struct   {
 
     CrabZ80_reg_t *offset;
 
-    uint8 internal_reg;
     uint8 iff1;
     uint8 iff2;
+    uint8 internal_reg;
     uint8 im;
 
     uint8 halt;

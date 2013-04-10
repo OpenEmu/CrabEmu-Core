@@ -24,6 +24,8 @@
 
 CLINKAGE
 
+#include <stdio.h>
+
 #define TEREBI_OEKAKI_PRESSED   1
 #define TEREBI_OEKAKI_AXIS_Y    2
 
@@ -34,6 +36,9 @@ extern uint16 terebi_mread16(uint16 addr);
 extern void terebi_mwrite16(uint16 addr, uint16 data);
 
 extern void terebi_update(int x, int y, int pressed);
+
+extern int terebi_write_context(FILE *fp);
+extern int terebi_read_context(const uint8 *buf);
 
 ENDCLINK
 

@@ -22,6 +22,7 @@
 #include "smsvdp.h"
 #include "smsz80.h"
 #include "sn76489.h"
+#include "sdscterminal.h"
 
 extern uint8 sms_paging_regs[4];
 extern uint8 *sms_rom_page0;
@@ -42,18 +43,19 @@ extern uint8 *sms_read_map[256];
 extern uint8 *sms_write_map[256];
 extern uint8 sms_dummy_arear[256];
 extern uint8 sms_dummy_areaw[256];
+extern int sms_bios_active;
 
 typedef void (*remap_page_func)();
 remap_page_func sms_mem_remap_page[4];
 
-void sms_mem_remap_page0_gg_bios(void)  {
+void sms_mem_remap_page0_gg_bios(void) {
     int i;
 
     if(sms_paging_regs[1] && sms_cart_len > 0x4000) {
         sms_rom_page0 = &sms_cart_rom[0x4000 *
             (sms_paging_regs[1] % (sms_cart_len / 0x4000))];
     }
-    else    {
+    else {
         sms_rom_page0 = sms_cart_rom;
     }
 
@@ -67,7 +69,7 @@ void sms_mem_remap_page0_gg_bios(void)  {
     sms_write_map[2] = sms_dummy_areaw;
     sms_write_map[3] = sms_dummy_areaw;
 
-    for(; i < 0x40; ++i)    {
+    for(; i < 0x40; ++i) {
         sms_read_map[i] = sms_rom_page0 + (i << 8);
         sms_write_map[i] = sms_dummy_areaw;
     }
@@ -75,13 +77,14 @@ void sms_mem_remap_page0_gg_bios(void)  {
     sms_z80_set_readmap(sms_read_map);
 }
 
-static void sms_mem_gg_handle_memctl(uint8 data)    {
+static void sms_mem_gg_handle_memctl(uint8 data) {
     if(sms_memctl == data)
         return;
 
     sms_mem_handle_memctl(data & SMS_MEMCTL_BIOS);
 
-    if(!(data & SMS_MEMCTL_BIOS) && gg_bios_rom != NULL)    {
+    if(!(data & SMS_MEMCTL_BIOS) && gg_bios_rom != NULL) {
+        sms_bios_active = 1;
         sms_mem_remap_page[1] = &sms_mem_remap_page0_gg_bios;
         sms_mem_remap_page0_gg_bios();
     }
@@ -95,35 +98,45 @@ void sms_gg_port_write(uint16 port, uint8 data) {
     if(port < 0x07) {
         sms_gg_regs[port] = data;
 
-        if(port == 0x06)    {
+        if(port == 0x06) {
             sn76489_set_output_channels(&psg, data);
         }
     }
-    else if(port < 0x40)    {
+    else if(port < 0x40) {
         if(port & 0x01) {
             /* I/O Control register */
             sms_mem_handle_ioctl(data);
         }
-        else    {
+        else {
             /* Memory Control register */
             sms_mem_gg_handle_memctl(data);
         }
     }
-    else if(port < 0x80)    {
+    else if(port < 0x80) {
         /* SN76489 PSG */
         sn76489_write(&psg, data);
     }
-    else if(port < 0xC0)    {
+    else if(port < 0xC0) {
         if(port & 0x01) {
             /* VDP Control port */
             sms_vdp_ctl_write(data);
         }
-        else    {
+        else {
             /* VDP Data port */
             sms_vdp_data_write(data);
         }
     }
-    else    {
+    else {
+#ifdef ENABLE_SDSC_TERMINAL
+        if(sms_memctl & SMS_MEMCTL_IO) {
+            if(port == 0xFC) {
+                sms_sdsc_ctl_write(data);
+            }
+            else if(port == 0xFD) {
+                sms_sdsc_data_write(data);
+            }
+        }
+#endif
     }
 }
 
@@ -133,36 +146,36 @@ uint8 sms_gg_port_read(uint16 port) {
     if(port < 0x07) {
         return sms_gg_regs[port];
     }
-    else if(port < 0x40)    {
+    else if(port < 0x40) {
         return 0xFF;
     }
-    else if(port < 0x80)    {
+    else if(port < 0x80) {
         if(port & 0x01) {
             return 0;
         }
-        else    {
+        else {
             return sms_vdp_vcnt_read();
         }
     }
-    else if(port < 0xC0)    {
+    else if(port < 0xC0) {
         if(port & 0x01) {
             return sms_vdp_status_read();
         }
-        else    {
+        else {
             return sms_vdp_data_read();
         }
     }
-    else if(port == 0xC0 || port == 0xDC)   {
+    else if(port == 0xC0 || port == 0xDC) {
         /* I/O port A/B register */
         return ((sms_pad & sms_ioctl_input_mask) |
                 (sms_ioctl_output_bits & sms_ioctl_output_mask)) & 0xFF;
     }
-    else if(port == 0xC1 || port == 0xDD)   {
+    else if(port == 0xC1 || port == 0xDD) {
         /* I/O port B/misc register */
         return (((sms_pad & sms_ioctl_input_mask) |
                  (sms_ioctl_output_bits & sms_ioctl_output_mask)) >> 8) & 0xFF;
     }
-    else    {
+    else {
         return 0xFF;
     }
 }

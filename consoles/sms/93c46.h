@@ -36,7 +36,7 @@ CLINKAGE
 #define EEPROM93c46_LINE_CS       4
 #define EEPROM93c46_LINE_DATA_OUT 8
 
-typedef struct eeprom93c46_s    {
+typedef struct eeprom93c46_s {
     uint16 data[64];
     int mode;
     int bit;

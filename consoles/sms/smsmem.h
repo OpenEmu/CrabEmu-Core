@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2007, 2008, 2009 Lawrence Sebald
+    Copyright (C) 2005, 2007, 2008, 2009, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -25,12 +25,18 @@
 
 CLINKAGE
 
+#define SMS_MAPPER_NONE             0
 #define SMS_MAPPER_SEGA             1
 #define SMS_MAPPER_CODEMASTERS      2
 #define SMS_MAPPER_KOREAN           3
 #define SMS_MAPPER_93C46            4
 #define SMS_MAPPER_CASTLE           5
 #define SMS_MAPPER_TEREBI_OEKAKI    6
+#define SMS_MAPPER_KOREAN_MSX       7
+#define SMS_MAPPER_4PAK_ALL_ACTION  8
+#define SMS_MAPPER_JANGGUN          9
+#define SMS_MAPPER_TW_MSX_TYPE_A    10
+#define SMS_MAPPER_TW_MSX_TYPE_B    11
 
 #define SMS_MEMCTL_IO               (1 << 2)
 #define SMS_MEMCTL_BIOS             (1 << 3)
@@ -55,17 +61,31 @@ extern void sms_mem_handle_memctl(uint8 data);
 extern void sms_mem_handle_ioctl(uint8 data);
 
 extern int sms_mem_load_bios(const char *fn);
-extern int sms_mem_load_rom(const char *fn);
+extern int sms_mem_load_rom(const char *fn, int console);
 
 extern int sms_mem_init(void);
 extern int sms_mem_shutdown(void);
 extern void sms_mem_reset(void);
 
-extern int sms_write_cartram_to_file(void);
-extern int sms_read_cartram_from_file(void);
+extern int sms_write_cartram_to_file(const char *fn);
+extern int sms_read_cartram_from_file(const char *fn);
 
-extern void sms_mem_write_context(FILE *fp);
-extern void sms_mem_read_context(FILE *fp);
+extern int sms_ym2413_write_context(FILE *fp);
+extern int sms_ym2413_read_context(const uint8 *buf);
+extern int sms_mem_write_context(FILE *fp);
+extern int sms_mem_read_context(const uint8 *buf);
+extern int sms_regs_read_context(const uint8 *buf);
+extern int sms_ggregs_read_context(const uint8 *buf);
+extern int sms_mapper_read_context(const uint8 *buf);
+extern int sms_mapper_pg_read_context(const uint8 *buf);
+extern int sms_mapper_mem_read_context(const uint8 *buf);
+
+extern int sms_game_read_context(const uint8 *buf);
+extern int sms_game_write_context(FILE *fp);
+
+extern void sms_mem_read_context_v1(FILE *fp);
+
+extern void sms_get_checksums(uint32 *crc, uint32 *adler);
 
 ENDCLINK
 

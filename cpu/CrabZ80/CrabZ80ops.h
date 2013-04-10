@@ -22,12 +22,12 @@
 #error this file in other files.
 #endif
 
-/* Grr... stupid GCC thinks this variable may be used uninitialized... */
-uint32 _value = 0;
+{
+uint32 _value;
 int8 _disp;
 uint32 _tmp;
 
-switch(inst)    {
+switch(inst) {
     case 0x00:  /* NOP */
     case 0x40:  /* LD B, B */
     case 0x49:  /* LD C, C */
@@ -201,7 +201,7 @@ RRCAOP:
 
     case 0x10:  /* DJNZ e */
 DJNZOP:
-        if(--cpu->bc.b.h)   {
+        if(--cpu->bc.b.h) {
             cycles_done += 1;
             goto JROP;
         }
@@ -220,7 +220,7 @@ JROP:
 
     case 0x20:  /* JR NZ, e */
 JRNZOP:
-        if(!(cpu->af.b.l & 0x40))   {
+        if(!(cpu->af.b.l & 0x40)) {
             goto JROP;
         }
 
@@ -230,7 +230,7 @@ JRNZOP:
 
     case 0x28:  /* JR Z, e */
 JRZOP:
-        if(cpu->af.b.l & 0x40)  {
+        if(cpu->af.b.l & 0x40) {
             goto JROP;
         }
 
@@ -240,7 +240,7 @@ JRZOP:
 
     case 0x30:  /* JR NC, e */
 JRNCOP:
-        if(!(cpu->af.b.l & 0x01))   {
+        if(!(cpu->af.b.l & 0x01)) {
             goto JROP;
         }
 
@@ -250,7 +250,7 @@ JRNCOP:
 
     case 0x38:  /* JR C, e */
 JRCOP:
-        if(cpu->af.b.l & 0x01)  {
+        if(cpu->af.b.l & 0x01) {
             goto JROP;
         }
 
@@ -284,28 +284,28 @@ DAAOP:
         int cf = cpu->af.b.l & 0x01;
         int hf = cpu->af.b.l & 0x10;
         int nf = cpu->af.b.l & 0x02;
-        
+
         if(cf) {
             _value = (low < 0x0A && !hf) ? 0x60 : 0x66;
         }
-        else    {
-            if(low < 0x0A)  {
+        else {
+            if(low < 0x0A) {
                 if(high < 0x0A) {
                     _value = (hf) ? 0x06 : 0x00;
                 }
-                else    {
+                else {
                     _value = (hf) ? 0x66 : 0x60;
                 }
             }
-            else    {
+            else {
                 _value = (high < 0x09) ? 0x06 : 0x66;
             }
         }
 
-        if(nf)  {
+        if(nf) {
             cpu->af.b.h -= _value;
         }
-        else    {
+        else {
             cpu->af.b.h += _value;
         }
 
@@ -314,12 +314,12 @@ DAAOP:
         if(_value >= 0x60)
             cpu->af.b.l |= 0x01;
 
-        if(nf)  {
-            if(hf && low < 0x06)    {
+        if(nf) {
+            if(hf && low < 0x06) {
                 cpu->af.b.l |= 0x10;
             }
         }
-        else if(low >= 10)  {
+        else if(low >= 10) {
             cpu->af.b.l |= 0x10;
         }
 
@@ -648,7 +648,7 @@ CP8IMMOP:
 
     case 0xC0:  /* RET NZ */
 RETNZOP:
-        if(!(cpu->af.b.l & 0x40))   {
+        if(!(cpu->af.b.l & 0x40)) {
             goto CONDRET;
         }
 
@@ -657,7 +657,7 @@ RETNZOP:
 
     case 0xC8:  /* RET Z */
 RETZOP:
-        if(!(cpu->af.b.l & 0x40))   {
+        if(!(cpu->af.b.l & 0x40)) {
             cycles_done += 5;
             goto out;
         }
@@ -675,7 +675,7 @@ RETOP:
 
     case 0xD0:  /* RET NC */
 RETNCOP:
-        if(!(cpu->af.b.l & 0x01))   {
+        if(!(cpu->af.b.l & 0x01)) {
             goto CONDRET;
         }
 
@@ -684,7 +684,7 @@ RETNCOP:
 
     case 0xD8:  /* RET C */
 RETCOP:
-        if(cpu->af.b.l & 0x01)  {
+        if(cpu->af.b.l & 0x01) {
             goto CONDRET;
         }
 
@@ -693,7 +693,7 @@ RETCOP:
 
     case 0xE0:  /* RET PO */
 RETPOOP:
-        if(!(cpu->af.b.l & 0x04))   {
+        if(!(cpu->af.b.l & 0x04)) {
             goto CONDRET;
         }
 
@@ -702,7 +702,7 @@ RETPOOP:
 
     case 0xE8:  /* RET PE */
 RETPEOP:
-        if(cpu->af.b.l & 0x04)  {
+        if(cpu->af.b.l & 0x04) {
             goto CONDRET;
         }
 
@@ -711,7 +711,7 @@ RETPEOP:
 
     case 0xF0:  /* RET P */
 RETPOP:
-        if(!(cpu->af.b.l & 0x80))   {
+        if(!(cpu->af.b.l & 0x80)) {
             goto CONDRET;
         }
 
@@ -720,7 +720,7 @@ RETPOP:
 
     case 0xF8:  /* RET M */
 RETMOP:
-        if(cpu->af.b.l & 0x80)  {
+        if(cpu->af.b.l & 0x80) {
             goto CONDRET;
         }
 
@@ -744,7 +744,7 @@ POPAFOP:
 
     case 0xC2:  /* JP NZ, ee */
 JPNZOP:
-        if(cpu->af.b.l & 0x40)   {
+        if(cpu->af.b.l & 0x40) {
             goto out_nocondjump;
         }
 
@@ -759,7 +759,7 @@ JPOP:
 
     case 0xCA:  /* JP Z, ee */
 JPZOP:
-        if(cpu->af.b.l & 0x40)  {
+        if(cpu->af.b.l & 0x40) {
             goto JPOP;
         }
 
@@ -767,7 +767,7 @@ JPZOP:
 
     case 0xD2:  /* JP NC, ee */
 JPNCOP:
-        if(!(cpu->af.b.l & 0x01))   {
+        if(!(cpu->af.b.l & 0x01)) {
             goto JPOP;
         }
     
@@ -775,7 +775,7 @@ JPNCOP:
 
     case 0xDA:  /* JP C, ee */
 JPCOP:
-        if(cpu->af.b.l & 0x01)  {
+        if(cpu->af.b.l & 0x01) {
             goto JPOP;
         }
 
@@ -783,7 +783,7 @@ JPCOP:
 
     case 0xE2:  /* JP PO, ee */
 JPPOOP:
-        if(!(cpu->af.b.l & 0x04))   {
+        if(!(cpu->af.b.l & 0x04)) {
             goto JPOP;
         }
 
@@ -791,7 +791,7 @@ JPPOOP:
 
     case 0xEA:  /* JP PE, ee */
 JPPEOP:
-        if(cpu->af.b.l & 0x04)  {
+        if(cpu->af.b.l & 0x04) {
             goto JPOP;
         }
 
@@ -799,7 +799,7 @@ JPPEOP:
 
     case 0xF2:  /* JP P, ee */
 JPPOP:
-        if(!(cpu->af.b.l & 0x80))   {
+        if(!(cpu->af.b.l & 0x80)) {
             goto JPOP;
         }
 
@@ -807,7 +807,7 @@ JPPOP:
 
     case 0xFA:  /* JP M, ee */
 JPMOP:
-        if(cpu->af.b.l & 0x80)  {
+        if(cpu->af.b.l & 0x80) {
             goto JPOP;
         }
 
@@ -815,7 +815,7 @@ JPMOP:
 
     case 0xC4:  /* CALL NZ, ee */
 CALLNZOP:
-        if(!(cpu->af.b.l & 0x40))   {
+        if(!(cpu->af.b.l & 0x40)) {
             goto CALLOP;
         }
 
@@ -823,7 +823,7 @@ CALLNZOP:
 
     case 0xCC:  /* CALL Z, ee */
 CALLZOP:
-        if(!(cpu->af.b.l & 0x40))   {
+        if(!(cpu->af.b.l & 0x40)) {
             goto out_nocondjump;
         }
 
@@ -840,7 +840,7 @@ CALLOP:
 
     case 0xD4:  /* CALL NC, ee */
 CALLNCOP:
-        if(!(cpu->af.b.l & 0x01))   {
+        if(!(cpu->af.b.l & 0x01)) {
             goto CALLOP;
         }
 
@@ -848,7 +848,7 @@ CALLNCOP:
                 
     case 0xDC:  /* CALL C, ee */
 CALLCOP:
-        if(cpu->af.b.l & 0x01)  {
+        if(cpu->af.b.l & 0x01) {
             goto CALLOP;
         }
 
@@ -856,7 +856,7 @@ CALLCOP:
 
     case 0xE4:  /* CALL PO, ee */
 CALLPOOP:
-        if(!(cpu->af.b.l & 0x04))   {
+        if(!(cpu->af.b.l & 0x04)) {
             goto CALLOP;
         }
 
@@ -864,7 +864,7 @@ CALLPOOP:
 
     case 0xEC:  /* CALL PE, ee */
 CALLPEOP:
-        if(cpu->af.b.l & 0x04)  {
+        if(cpu->af.b.l & 0x04) {
             goto CALLOP;
         }
 
@@ -872,7 +872,7 @@ CALLPEOP:
 
     case 0xF4:  /* CALL P, ee */
 CALLPOP:
-        if(!(cpu->af.b.l & 0x80))   {
+        if(!(cpu->af.b.l & 0x80)) {
             goto CALLOP;
         }
 
@@ -880,7 +880,7 @@ CALLPOP:
 
     case 0xFC:  /* CALL M, ee */
 CALLMOP:
-        if(cpu->af.b.l & 0x80)  {
+        if(cpu->af.b.l & 0x80) {
             goto CALLOP;
         }
 
@@ -919,7 +919,7 @@ RSTOP:
     case 0xD3:  /* OUT (n), A */
 OUTIMMOP:
         FETCH_ARG8(_value);
-        cpu->pwrite(_value, cpu->af.b.h);
+        cpu->pwrite(_value | (cpu->af.b.h << 8), cpu->af.b.h);
         cycles_done += 11;
         goto out;
 
@@ -932,7 +932,7 @@ EXXOP:
     case 0xDB:  /* IN A, (n) */
 INIMMOP:
         FETCH_ARG8(_value);
-        cpu->af.b.h = cpu->pread(_value);
+        cpu->af.b.h = cpu->pread(_value | (cpu->af.b.h << 8));
         cycles_done += 11;
         goto out;
 
@@ -1007,3 +1007,4 @@ out_nocondjump:
     cpu->pc.w += 2;
 
     /* Fall through... */
+}

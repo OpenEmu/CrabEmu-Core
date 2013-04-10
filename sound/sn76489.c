@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -30,6 +30,12 @@ static const int volume_values[16] = {
 
 int sn76489_init(sn76489_t *psg, float clock, float sample_rate,
                  uint16 noise_bits, uint16 tapped) {
+    psg->enabled_channels = 0x0F;
+    return sn76489_reset(psg, clock, sample_rate, noise_bits, tapped);
+}
+
+int sn76489_reset(sn76489_t *psg, float clock, float sample_rate,
+                  uint16 noise_bits, uint16 tapped) {
     psg->volume[0] = 0xF;
     psg->volume[1] = 0xF;
     psg->volume[2] = 0xF;
@@ -52,8 +58,6 @@ int sn76489_init(sn76489_t *psg, float clock, float sample_rate,
     psg->tone_state[2] = 1;
     psg->tone_state[3] = 1;
 
-    psg->enabled_channels = 0x0F;
-
     psg->output_channels = 0xFF; /* All Channels, both sides */
 
     memset(psg->channel_masks[0], 0xFFFFFFFF, 4 * sizeof(uint32));
@@ -68,12 +72,12 @@ int sn76489_init(sn76489_t *psg, float clock, float sample_rate,
     return 0;
 }
 
-void sn76489_write(sn76489_t *psg, uint8 byte)  {
+void sn76489_write(sn76489_t *psg, uint8 byte) {
     if(byte & 0x80) {
         /* This is a LATCH/DATA byte */
         psg->latched_reg = (byte & 0x70);
 
-        switch(psg->latched_reg)    {
+        switch(psg->latched_reg) {
             case LATCH_TONE0:
                 psg->tone[0] = (psg->tone[0] & 0x3F0) | (byte & 0x0F);
                 break;
@@ -101,9 +105,9 @@ void sn76489_write(sn76489_t *psg, uint8 byte)  {
                 break;
         }
     }
-    else    {
+    else {
         /* This is a DATA byte */
-        switch(psg->latched_reg)    {
+        switch(psg->latched_reg) {
             case LATCH_TONE0:
                 psg->tone[0] = (psg->tone[0] & 0x000F) | ((byte & 0x3F) << 4);
                 break;
@@ -134,7 +138,7 @@ void sn76489_write(sn76489_t *psg, uint8 byte)  {
 }
 
 /* This is pretty much taken directly from Maxim's SN76489 document. */
-static inline int parity(uint16 input)    {
+static __INLINE__ int parity(uint16 input) {
     input ^= input >> 8;
     input ^= input >> 4;
     input ^= input >> 2;
@@ -145,23 +149,23 @@ static inline int parity(uint16 input)    {
 #ifndef _arch_dreamcast
 
 void sn76489_execute_samples(sn76489_t *psg, int16 *buf,
-                             uint32 samples)    {
+                             uint32 samples) {
     int32 channels[4];
     uint32 i, j;
 
-    for(i = 0; i < samples; ++i)    {
-        for(j = 0; j < 3; ++j)  {
+    for(i = 0; i < samples; ++i) {
+        for(j = 0; j < 3; ++j) {
             psg->counter[j] -= psg->clocks_per_sample;
             channels[j] = ((psg->enabled_channels >> j) & 0x01) *
                           psg->tone_state[j] * volume_values[psg->volume[j]];
             if(psg->counter[j] <= 0.0f) {
-                if(psg->tone[j] < 7)    {
+                if(psg->tone[j] < 7) {
                     /* The PSG doesn't change states if the tone isn't at least
                        7, this fixes the "Sega" at the beginning of Sonic The
                        Hedgehog 2 for the Game Gear. */
                     psg->tone_state[j] = 1;
                 }
-                else    {
+                else {
                     psg->tone_state[j] = -psg->tone_state[j];
                 }
 
@@ -174,22 +178,22 @@ void sn76489_execute_samples(sn76489_t *psg, int16 *buf,
 
         psg->counter[3] -= psg->clocks_per_sample;
         
-        if(psg->counter[3] < 0.0f)  {
+        if(psg->counter[3] < 0.0f) {
             psg->tone_state[3] = -psg->tone_state[3];
             if((psg->noise & 0x03) == 0x03) {
                 psg->counter[3] = psg->counter[2];
             }
-            else    {
+            else {
                 psg->counter[3] += 0x10 << (psg->noise & 0x03);
             }
 
             if(psg->tone_state[3] == 1) {
-                if(psg->noise & 0x04)   {
+                if(psg->noise & 0x04) {
                     psg->noise_shift = (psg->noise_shift >> 1) |
                         (parity(psg->noise_shift & psg->noise_tapped) <<
                         (psg->noise_bits - 1));
                 }
-                else    {
+                else {
                     psg->noise_shift = (psg->noise_shift >> 1) |
                         ((psg->noise_shift & 0x01) << (psg->noise_bits - 1));
                 }
@@ -215,19 +219,19 @@ void sn76489_execute_samples_dc(sn76489_t *psg, int16 *bufl,
     int32 channels[4];
     uint32 i, j;
 
-    for(i = 0; i < samples; ++i)    {
-        for(j = 0; j < 3; ++j)  {
+    for(i = 0; i < samples; ++i) {
+        for(j = 0; j < 3; ++j) {
             psg->counter[j] -= psg->clocks_per_sample;
             channels[j] = ((psg->enabled_channels >> j) & 0x01) *
                 psg->tone_state[j] * volume_values[psg->volume[j]];
             if(psg->counter[j] <= 0.0f) {
-                if(psg->tone[j] < 7)    {
+                if(psg->tone[j] < 7) {
                     /* The PSG doesn't change states if the tone isn't at least
                        7, this fixes the "Sega" at the beginning of Sonic The
                        Hedgehog 2 for the Game Gear. */
                     psg->tone_state[j] = 1;
                 }
-                else    {
+                else {
                     psg->tone_state[j] = -psg->tone_state[j];
                 }
 
@@ -240,22 +244,22 @@ void sn76489_execute_samples_dc(sn76489_t *psg, int16 *bufl,
 
         psg->counter[3] -= psg->clocks_per_sample;
 
-        if(psg->counter[3] < 0.0f)  {
+        if(psg->counter[3] < 0.0f) {
             psg->tone_state[3] = -psg->tone_state[3];
             if((psg->noise & 0x03) == 0x03) {
                 psg->counter[3] = psg->counter[2];
             }
-            else    {
+            else {
                 psg->counter[3] += 0x10 << (psg->noise & 0x03);
             }
 
             if(psg->tone_state[3] == 1) {
-                if(psg->noise & 0x04)   {
+                if(psg->noise & 0x04) {
                     psg->noise_shift = (psg->noise_shift >> 1) |
                         (parity(psg->noise_shift & psg->noise_tapped) <<
                         (psg->noise_bits - 1));
                 }
-                else    {
+                else {
                     psg->noise_shift = (psg->noise_shift >> 1) |
                         ((psg->noise_shift & 0x01) << (psg->noise_bits - 1));
                 }
@@ -275,7 +279,7 @@ void sn76489_execute_samples_dc(sn76489_t *psg, int16 *bufl,
 }
 #endif
 
-void sn76489_set_output_channels(sn76489_t *psg, uint8 data)  {
+void sn76489_set_output_channels(sn76489_t *psg, uint8 data) {
     psg->output_channels = data;
 
     memset(psg->channel_masks[0], 0, 4 * sizeof(uint32));

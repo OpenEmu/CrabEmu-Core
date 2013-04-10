@@ -25,7 +25,7 @@
 ++cpu->ir.b.l;
 FETCH_ARG8(inst);
 
-switch(inst)    {
+switch(inst) {
     case 0x00:  /* RLC B */
     case 0x01:  /* RLC C */
     case 0x02:  /* RLC D */
