@@ -32,6 +32,7 @@
 #import "OESMSSystemResponderClient.h"
 #import "OEGGSystemResponderClient.h"
 #import "OESG1000SystemResponderClient.h"
+#import "OEColecoVisionSystemResponderClient.h"
 
 #define _UINT32
 
@@ -46,12 +47,13 @@
 
 #define SAMPLERATE 44100
 
-@interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient>
+@interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient, OEColecoVisionSystemResponderClient>
 {
     NSString *romName;
 }
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 - (int)crabButtonForSG1000Button:(OESG1000Button)button;
+- (int)crabButtonForColecoVisionButton:(OEColecoVisionButton)button player:(NSUInteger)player;
 @end
 
 @implementation SMSGameCore
@@ -334,6 +336,35 @@ void gui_set_title(const char *str)
     return btn;
 }
 
+- (int)crabButtonForColecoVisionButton:(OEColecoVisionButton)button player:(NSUInteger)player;
+{
+    int btn = -1;
+    switch(button)
+    {
+        case OEColecoVisionButtonUp    : btn = COLECOVISION_UP;    break;
+        case OEColecoVisionButtonDown  : btn = COLECOVISION_DOWN;  break;
+        case OEColecoVisionButtonLeft  : btn = COLECOVISION_LEFT;  break;
+        case OEColecoVisionButtonRight : btn = COLECOVISION_RIGHT; break;
+        case OEColecoVisionButtonLeftAction     : btn = COLECOVISION_L_ACTION;     break;
+        case OEColecoVisionButtonRightAction    : btn = COLECOVISION_R_ACTION;     break;
+        case OEColecoVisionButton1     : btn = COLECOVISION_1;    break;
+        case OEColecoVisionButton2     : btn = COLECOVISION_2;    break;
+        case OEColecoVisionButton3     : btn = COLECOVISION_3;    break;
+        case OEColecoVisionButton4     : btn = COLECOVISION_4;    break;
+        case OEColecoVisionButton5     : btn = COLECOVISION_5;    break;
+        case OEColecoVisionButton6     : btn = COLECOVISION_6;    break;
+        case OEColecoVisionButton7     : btn = COLECOVISION_7;    break;
+        case OEColecoVisionButton8     : btn = COLECOVISION_8;    break;
+        case OEColecoVisionButton9     : btn = COLECOVISION_9;    break;
+        case OEColecoVisionButton0     : btn = COLECOVISION_0;    break;
+        case OEColecoVisionButtonAsterisk  : btn = COLECOVISION_STAR;    break;
+        case OEColecoVisionButtonPound     : btn = COLECOVISION_POUND;    break;
+        default : break;
+    }
+    
+    return btn;
+}
+
 - (oneway void)didPushGGButton:(OEGGButton)button;
 {
     int btn = [self crabButtonForButton:button];
@@ -393,6 +424,20 @@ void gui_set_title(const char *str)
 {
     int btn = [self crabButtonForSG1000Button:button];
     if(btn > -1) sms_button_released(1, btn);
+}
+
+- (oneway void)didPushColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
+{
+    int btn = [self crabButtonForColecoVisionButton:button player:player];
+    
+    if(btn > -1) coleco_button_pressed(player, btn);
+}
+
+- (oneway void)didReleaseColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
+{
+    int btn = [self crabButtonForColecoVisionButton:button player:player];
+    
+    if(btn > -1) coleco_button_released(player, btn);
 }
 
 @end

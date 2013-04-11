@@ -31,6 +31,7 @@
 		<string>openemu.system.sms</string>
 		<string>openemu.system.gg</string>
 		<string>openemu.system.sg1000</string>
+		<string>openemu.system.colecovision</string>
 	</array>
 	<key>SUEnableAutomaticChecks</key>
 	<string>1</string>
