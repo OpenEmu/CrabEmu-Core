@@ -41,6 +41,8 @@
 #include "smsvdp.h"
 #include "smsz80.h"
 #include "rom.h"
+#include "colecovision.h"
+#include "colecomem.h"
 
 #define SAMPLERATE 44100
 
@@ -56,6 +58,7 @@
 
 extern int sms_initialized;
 extern int sms_console;
+extern int coleco_initialized;
 
 // Global variables because the callbacks need to access them...
 static OERingBuffer *ringBuffer;
@@ -83,6 +86,7 @@ static OERingBuffer *ringBuffer;
     free(tempBuffer);
     
     sms_initialized = 0;
+    coleco_initialized = 0;
 }
 
 - (void)executeFrame
@@ -90,7 +94,10 @@ static OERingBuffer *ringBuffer;
     //DLog(@"Executing");
     //Get a reference to the emulator
     [bufLock lock];
-    oldrun = sms_frame(oldrun, 0);
+    if(sms_console == CONSOLE_COLECOVISION)
+        oldrun = coleco_frame(oldrun, 0);
+    else
+        oldrun = sms_frame(oldrun, 0);
     [bufLock unlock];
 }
 
@@ -104,9 +111,20 @@ static OERingBuffer *ringBuffer;
     int console = rom_detect_console([path UTF8String]);
     DLog(@"Loaded File");
     //TODO: add choice NTSC/PAL
-    if(sms_init(SMS_VIDEO_NTSC, SMS_REGION_DOMESTIC)) return NO;
-    
-    if(sms_mem_load_rom([path UTF8String], console)) return NO;
+    if(console == CONSOLE_COLECOVISION)
+    {
+        NSString *biosPath = [NSString pathWithComponents:@[
+                                    [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) lastObject],
+                                    @"OpenEmu", @"BIOS", @"coleco.rom"]];
+        coleco_init(VIDEO_NTSC);
+        coleco_mem_load_bios([biosPath UTF8String]);
+        coleco_mem_load_rom([path UTF8String]);
+    }
+    else
+    {
+        sms_init(SMS_VIDEO_NTSC, SMS_REGION_DOMESTIC);
+        sms_mem_load_rom([path UTF8String], console);
+    }
     
     NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
     
@@ -118,14 +136,18 @@ static OERingBuffer *ringBuffer;
         
         NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
         
-        sms_read_cartram_from_file([filePath UTF8String]);
+        if(console != CONSOLE_COLECOVISION)
+            sms_read_cartram_from_file([filePath UTF8String]);
     }
 
     return YES;
 }
 - (void)resetEmulation
 {
-    sms_soft_reset();
+    if(sms_console == CONSOLE_COLECOVISION)
+        coleco_soft_reset();
+    else
+        sms_soft_reset();
 }
 
 - (void)stopEmulation
@@ -143,7 +165,8 @@ static OERingBuffer *ringBuffer;
         
         NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
         
-        sms_write_cartram_to_file([filePath UTF8String]);
+        if(sms_console != CONSOLE_COLECOVISION)
+            sms_write_cartram_to_file([filePath UTF8String]);
     }
     
     [super stopEmulation];
@@ -205,12 +228,18 @@ static OERingBuffer *ringBuffer;
 
 - (BOOL)saveStateToFileAtPath:(NSString *)fileName
 {
-    return sms_save_state([fileName UTF8String]) == 0;
+    if(sms_console == CONSOLE_COLECOVISION)
+        return coleco_save_state([fileName UTF8String]) == 0;
+    else
+        return sms_save_state([fileName UTF8String]) == 0;
 }
 
 - (BOOL)loadStateFromFileAtPath:(NSString *)fileName
 {
-    return sms_load_state([fileName UTF8String]) == 0;
+    if(sms_console == CONSOLE_COLECOVISION)
+        return coleco_load_state([fileName UTF8String]) == 0;
+    else
+        return sms_load_state([fileName UTF8String]) == 0;
 }
 
 /*
