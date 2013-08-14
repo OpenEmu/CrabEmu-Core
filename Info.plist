@@ -24,6 +24,8 @@
 	<string>SMSGameCore</string>
 	<key>OEGameCorePlayerCount</key>
 	<string>2</string>
+	<key>OEGameCoreSupportsCheatCode</key>
+	<true/>
 	<key>OEProjectURL</key>
 	<string>http://crabemu.sourceforge.net/</string>
 	<key>OESystemIdentifiers</key>

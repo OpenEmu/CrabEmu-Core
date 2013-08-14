@@ -237,7 +237,7 @@
 		9443D46B1715FFE600E452AC /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = list.c; path = utils/list.c; sourceTree = "<group>"; };
 		9443D46C1715FFE600E452AC /* list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = list.h; path = utils/list.h; sourceTree = "<group>"; };
 		946C18AF171491B300C64BF9 /* OESG1000SystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESG1000SystemResponderClient.h; path = "../OpenEmu/SG-1000/OESG1000SystemResponderClient.h"; sourceTree = "<group>"; };
-		94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file; name = OEColecoVisionSystemResponderClient.h; path = ../OpenEmu/ColecoVision/OEColecoVisionSystemResponderClient.h; sourceTree = "<group>"; };
+		94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEColecoVisionSystemResponderClient.h; path = ../OpenEmu/ColecoVision/OEColecoVisionSystemResponderClient.h; sourceTree = "<group>"; };
 		B5DA7D8C0F5B28940008F047 /* CrabEmu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CrabEmu.h; sourceTree = "<group>"; };
 		C66DFC180F51D82F0080AA28 /* SMSGameCore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SMSGameCore.m; sourceTree = "<group>"; };
 		C66DFC190F51D82F0080AA28 /* SMSGameCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SMSGameCore.h; sourceTree = "<group>"; };

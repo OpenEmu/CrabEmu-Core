@@ -44,6 +44,7 @@
 #include "rom.h"
 #include "colecovision.h"
 #include "colecomem.h"
+#include "cheats.h"
 
 #define SAMPLERATE 44100
 
@@ -438,6 +439,46 @@ void gui_set_title(const char *str)
     int btn = [self crabButtonForColecoVisionButton:button player:player];
     
     if(btn > -1) coleco_button_released(player, btn);
+}
+
+- (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
+{
+    // Sanitize
+    code = [code stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    // Remove any spaces
+    code = [code stringByReplacingOccurrencesOfString:@" " withString:@""];
+    
+    // Remove address-value separator
+    code = [code stringByReplacingOccurrencesOfString:@"-" withString:@""];
+    
+    NSArray *multipleCodes = [[NSArray alloc] init];
+    multipleCodes = [code componentsSeparatedByString:@"+"];
+    
+    for (NSString *singleCode in multipleCodes)
+    {
+        if ([singleCode length] == 8)
+        {
+            // Action Replay GG/SMS format: XXXX-YYYY
+            NSString *address = [singleCode substringWithRange:NSMakeRange(0, 4)];
+            NSString *value = [singleCode substringWithRange:NSMakeRange(4, 4)];
+            
+            // Convert AR hex to int
+            uint32_t outAddress, outValue;
+            NSScanner* scanAddress = [NSScanner scannerWithString:address];
+            NSScanner* scanValue = [NSScanner scannerWithString:value];
+            [scanAddress scanHexInt:&outAddress];
+            [scanValue scanHexInt:&outValue];
+            
+            sms_cheat_t *arCode = (sms_cheat_t *)malloc(sizeof(sms_cheat_t));
+            arCode->ar_code = (outAddress << 16) | outValue;
+            strcpy(arCode->desc, [singleCode UTF8String]);
+            arCode->enabled = 1;
+            
+            sms_cheat_enable();
+            sms_cheat_add(arCode);
+        }
+    }
 }
 
 @end
