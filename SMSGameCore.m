@@ -104,10 +104,6 @@ static OERingBuffer *ringBuffer;
     [bufLock unlock];
 }
 
-- (void)setupEmulation
-{
-}
-
 - (BOOL)loadFileAtPath:(NSString*)path
 {
     romName = [path copy];
