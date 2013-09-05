@@ -103,7 +103,7 @@ static OERingBuffer *ringBuffer;
     [bufLock unlock];
 }
 
-- (BOOL)loadFileAtPath:(NSString*)path
+- (BOOL)loadFileAtPath:(NSString *)path
 {
     romName = [path copy];
     int console = rom_detect_console([path UTF8String]);
@@ -140,6 +140,7 @@ static OERingBuffer *ringBuffer;
 
     return YES;
 }
+
 - (void)resetEmulation
 {
     if(sms_console == CONSOLE_COLECOVISION)
@@ -227,17 +228,17 @@ static OERingBuffer *ringBuffer;
 - (BOOL)saveStateToFileAtPath:(NSString *)fileName
 {
     if(sms_console == CONSOLE_COLECOVISION)
-        return coleco_save_state([fileName UTF8String]) == 0;
+        return coleco_save_state([fileName fileSystemRepresentation]) == 0;
     else
-        return sms_save_state([fileName UTF8String]) == 0;
+        return sms_save_state([fileName fileSystemRepresentation]) == 0;
 }
 
 - (BOOL)loadStateFromFileAtPath:(NSString *)fileName
 {
     if(sms_console == CONSOLE_COLECOVISION)
-        return coleco_load_state([fileName UTF8String]) == 0;
+        return coleco_load_state([fileName fileSystemRepresentation]) == 0;
     else
-        return sms_load_state([fileName UTF8String]) == 0;
+        return sms_load_state([fileName fileSystemRepresentation]) == 0;
 }
 
 /*
