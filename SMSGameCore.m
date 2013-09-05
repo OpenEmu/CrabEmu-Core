@@ -122,6 +122,7 @@ static OERingBuffer *ringBuffer;
     {
         sms_init(SMS_VIDEO_NTSC, SMS_REGION_DOMESTIC);
         sms_mem_load_rom([path UTF8String], console);
+        sms_frame(0, 1);
     }
     
     NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
