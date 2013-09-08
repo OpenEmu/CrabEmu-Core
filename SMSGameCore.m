@@ -287,12 +287,12 @@ void gui_set_title(const char *str)
     int btn = -1;
     switch(button)
     {
-        case OESMSButtonUp    : btn = SMS_UP;    break;
-        case OESMSButtonDown  : btn = SMS_DOWN;  break;
-        case OESMSButtonLeft  : btn = SMS_LEFT;  break;
-        case OESMSButtonRight : btn = SMS_RIGHT; break;
-        case OESMSButtonA     : btn = SMS_BUTTON_1;     break;
-        case OESMSButtonB     : btn = SMS_BUTTON_2;     break;
+        case OESMSButtonUp    : btn = SMS_UP;       break;
+        case OESMSButtonDown  : btn = SMS_DOWN;     break;
+        case OESMSButtonLeft  : btn = SMS_LEFT;     break;
+        case OESMSButtonRight : btn = SMS_RIGHT;    break;
+        case OESMSButtonA     : btn = SMS_BUTTON_1; break;
+        case OESMSButtonB     : btn = SMS_BUTTON_2; break;
         default : break;
     }
     
@@ -304,13 +304,13 @@ void gui_set_title(const char *str)
     int btn = -1;
     switch(button)
     {
-        case OEGGButtonUp:    btn = SMS_UP;     break;
-        case OEGGButtonDown:  btn = SMS_DOWN;   break;
-        case OEGGButtonLeft:  btn = SMS_LEFT;   break;
-        case OEGGButtonRight: btn = SMS_RIGHT;  break;
-        case OEGGButtonA:     btn = SMS_BUTTON_1;      break;
-        case OEGGButtonB:     btn = SMS_BUTTON_2;      break;
-        case OEGGButtonStart: btn = GAMEGEAR_START;        break;
+        case OEGGButtonUp:    btn = SMS_UP;         break;
+        case OEGGButtonDown:  btn = SMS_DOWN;       break;
+        case OEGGButtonLeft:  btn = SMS_LEFT;       break;
+        case OEGGButtonRight: btn = SMS_RIGHT;      break;
+        case OEGGButtonA:     btn = SMS_BUTTON_1;   break;
+        case OEGGButtonB:     btn = SMS_BUTTON_2;   break;
+        case OEGGButtonStart: btn = GAMEGEAR_START; break;
         default : break;
     }
     
@@ -322,12 +322,12 @@ void gui_set_title(const char *str)
     int btn = -1;
     switch(button)
     {
-        case OESG1000ButtonUp:    btn = SMS_UP;     break;
-        case OESG1000ButtonDown:  btn = SMS_DOWN;   break;
-        case OESG1000ButtonLeft:  btn = SMS_LEFT;   break;
-        case OESG1000ButtonRight: btn = SMS_RIGHT;  break;
-        case OESG1000Button1:     btn = SMS_BUTTON_1;      break;
-        case OESG1000Button2:     btn = SMS_BUTTON_2;      break;
+        case OESG1000ButtonUp:    btn = SMS_UP;       break;
+        case OESG1000ButtonDown:  btn = SMS_DOWN;     break;
+        case OESG1000ButtonLeft:  btn = SMS_LEFT;     break;
+        case OESG1000ButtonRight: btn = SMS_RIGHT;    break;
+        case OESG1000Button1:     btn = SMS_BUTTON_1; break;
+        case OESG1000Button2:     btn = SMS_BUTTON_2; break;
         default : break;
     }
     
@@ -339,24 +339,24 @@ void gui_set_title(const char *str)
     int btn = -1;
     switch(button)
     {
-        case OEColecoVisionButtonUp    : btn = COLECOVISION_UP;    break;
-        case OEColecoVisionButtonDown  : btn = COLECOVISION_DOWN;  break;
-        case OEColecoVisionButtonLeft  : btn = COLECOVISION_LEFT;  break;
-        case OEColecoVisionButtonRight : btn = COLECOVISION_RIGHT; break;
-        case OEColecoVisionButtonLeftAction     : btn = COLECOVISION_L_ACTION;     break;
-        case OEColecoVisionButtonRightAction    : btn = COLECOVISION_R_ACTION;     break;
-        case OEColecoVisionButton1     : btn = COLECOVISION_1;    break;
-        case OEColecoVisionButton2     : btn = COLECOVISION_2;    break;
-        case OEColecoVisionButton3     : btn = COLECOVISION_3;    break;
-        case OEColecoVisionButton4     : btn = COLECOVISION_4;    break;
-        case OEColecoVisionButton5     : btn = COLECOVISION_5;    break;
-        case OEColecoVisionButton6     : btn = COLECOVISION_6;    break;
-        case OEColecoVisionButton7     : btn = COLECOVISION_7;    break;
-        case OEColecoVisionButton8     : btn = COLECOVISION_8;    break;
-        case OEColecoVisionButton9     : btn = COLECOVISION_9;    break;
-        case OEColecoVisionButton0     : btn = COLECOVISION_0;    break;
-        case OEColecoVisionButtonAsterisk  : btn = COLECOVISION_STAR;    break;
-        case OEColecoVisionButtonPound     : btn = COLECOVISION_POUND;    break;
+        case OEColecoVisionButtonUp          : btn = COLECOVISION_UP;       break;
+        case OEColecoVisionButtonDown        : btn = COLECOVISION_DOWN;     break;
+        case OEColecoVisionButtonLeft        : btn = COLECOVISION_LEFT;     break;
+        case OEColecoVisionButtonRight       : btn = COLECOVISION_RIGHT;    break;
+        case OEColecoVisionButtonLeftAction  : btn = COLECOVISION_L_ACTION; break;
+        case OEColecoVisionButtonRightAction : btn = COLECOVISION_R_ACTION; break;
+        case OEColecoVisionButton1           : btn = COLECOVISION_1;        break;
+        case OEColecoVisionButton2           : btn = COLECOVISION_2;        break;
+        case OEColecoVisionButton3           : btn = COLECOVISION_3;        break;
+        case OEColecoVisionButton4           : btn = COLECOVISION_4;        break;
+        case OEColecoVisionButton5           : btn = COLECOVISION_5;        break;
+        case OEColecoVisionButton6           : btn = COLECOVISION_6;        break;
+        case OEColecoVisionButton7           : btn = COLECOVISION_7;        break;
+        case OEColecoVisionButton8           : btn = COLECOVISION_8;        break;
+        case OEColecoVisionButton9           : btn = COLECOVISION_9;        break;
+        case OEColecoVisionButton0           : btn = COLECOVISION_0;        break;
+        case OEColecoVisionButtonAsterisk    : btn = COLECOVISION_STAR;     break;
+        case OEColecoVisionButtonPound       : btn = COLECOVISION_POUND;    break;
         default : break;
     }
     
