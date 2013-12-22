@@ -37,8 +37,6 @@
 /* Begin PBXBuildFile section */
 		1B46D09D14293CAD0025EF88 /* libz.1.2.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B46D09C14293CAD0025EF88 /* libz.1.2.5.dylib */; };
 		3720DB4D0F19510D00744A9A /* CrabEmu.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3720DB4C0F19510D00744A9A /* CrabEmu.icns */; };
-		82CAFADA0FEDA5CA00CCDC7E /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = 82CAFAD90FEDA5CA00CCDC7E /* dsa_pub.pem */; };
-		82CAFDB00FEDD88100CCDC7E /* config.yaml in CopyFiles */ = {isa = PBXBuildFile; fileRef = 82CAFADD0FEDA5EA00CCDC7E /* config.yaml */; };
 		8D5B49B0048680CD000E48DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		8D5B49B4048680CD000E48DA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7ADFEA557BF11CA2CBB /* Cocoa.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		9443D4411715F42200E452AC /* CrabZ80.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D3FC1715F31000E452AC /* CrabZ80.c */; };
@@ -110,7 +108,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
-				82CAFDB00FEDD88100CCDC7E /* config.yaml in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,8 +121,6 @@
 		1B46D09C14293CAD0025EF88 /* libz.1.2.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.2.5.dylib; path = usr/lib/libz.1.2.5.dylib; sourceTree = SDKROOT; };
 		3720DB4C0F19510D00744A9A /* CrabEmu.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = CrabEmu.icns; sourceTree = "<group>"; };
 		8291C4E21489595000A72540 /* OEGGSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEGGSystemResponderClient.h; path = ../OpenEmu/GameGear/OEGGSystemResponderClient.h; sourceTree = "<group>"; };
-		82CAFAD90FEDA5CA00CCDC7E /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = dsa_pub.pem; sourceTree = "<group>"; };
-		82CAFADD0FEDA5EA00CCDC7E /* config.yaml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.yaml; sourceTree = "<group>"; };
 		8D5B49B6048680CD000E48DA /* CrabEmu.oecoreplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CrabEmu.oecoreplugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D5B49B7048680CD000E48DA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9443D39B1715F2EB00E452AC /* colecomem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = colecomem.c; sourceTree = "<group>"; };
@@ -285,7 +280,6 @@
 		089C167CFE841241C02AAC07 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				82CAFAD90FEDA5CA00CCDC7E /* dsa_pub.pem */,
 				8D5B49B7048680CD000E48DA /* Info.plist */,
 				089C167DFE841241C02AAC07 /* InfoPlist.strings */,
 				3720DB4C0F19510D00744A9A /* CrabEmu.icns */,
@@ -336,7 +330,6 @@
 		32C88E010371C26100C91783 /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				82CAFADD0FEDA5EA00CCDC7E /* config.yaml */,
 				B5DA7D8C0F5B28940008F047 /* CrabEmu.h */,
 				9443D45B1715F67D00E452AC /* rom.c */,
 				9443D45C1715F67D00E452AC /* rom.h */,
@@ -617,7 +610,6 @@
 			files = (
 				8D5B49B0048680CD000E48DA /* InfoPlist.strings in Resources */,
 				3720DB4D0F19510D00744A9A /* CrabEmu.icns in Resources */,
-				82CAFADA0FEDA5CA00CCDC7E /* dsa_pub.pem in Resources */,
 				94BE9E7A171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
