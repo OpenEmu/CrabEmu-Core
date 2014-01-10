@@ -38,9 +38,9 @@ static CrabZ80_t *cpu = NULL;
     uint16 pc2 = cpu->pc.w + 1; \
     uint8 pc_s = cpu->pc.w >> 8; \
     uint8 pc2_s = pc2 >> 8; \
-    name = cpu->readmap[pc_s] ? \
+    name = (cpu->readmap[pc_s] ? \
         cpu->readmap[pc_s][(uint8)cpu->pc.w] : \
-        cpu->mread(cpu->pc.w) | \
+        cpu->mread(cpu->pc.w)) | \
         ((cpu->readmap[pc2_s] ? \
           cpu->readmap[pc2_s][(uint8)pc2] : \
           cpu->mread(pc2)) << 8); \

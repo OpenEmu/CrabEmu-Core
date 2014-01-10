@@ -181,12 +181,17 @@ static OERingBuffer *ringBuffer;
 
 - (OEIntSize)bufferSize
 {
-    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : smsvdp.lines);
+    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : 256);
+}
+
+- (OEIntRect)screenRect
+{
+    return OEIntRectMake(0, 0, sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : smsvdp.lines);
 }
 
 - (OEIntSize)aspectSize
 {
-    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : smsvdp.lines);
+    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 4, sms_console == CONSOLE_GG ? 144 : 3);
 }
 
 - (const void *)videoBuffer

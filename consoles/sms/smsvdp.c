@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012, 2013, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -32,7 +32,7 @@
 
 extern int sms_console;
 sms_vdp_t smsvdp;
-uint32 lut[256];
+static uint32 lut[256];
 
 #ifdef CRABEMU_32BIT_COLOR
 static void update_local_pal_sms(int num) {
@@ -102,20 +102,19 @@ void sms_vdp_update_cache(int pat) {
     if(pat >= 512 || !smsvdp.pattern[pat].dirty)
         return;
 
-    /* Determine where we should start converting */
+    /* Determine where we should start converting from and to... */
     bitplane = smsvdp.vram + (pat << 5);
-
-    tmp1 = *bitplane++;
-    tmp2 = *bitplane++;
-    tmp3 = *bitplane++;
-    tmp4 = *bitplane++;
-
     tex1 = smsvdp.pattern[pat].texture[0] + 7;
     tex2 = smsvdp.pattern[pat].texture[1];
     tex3 = smsvdp.pattern[pat].texture[2] + 63;
     tex4 = smsvdp.pattern[pat].texture[3] + 56;
     
     for(i = 0; i < 8; ++i) {
+        tmp1 = *bitplane++;
+        tmp2 = *bitplane++;
+        tmp3 = *bitplane++;
+        tmp4 = *bitplane++;
+
         /* lutval = 8x4bpp pixels */
         lutval = (lut[tmp1]) | (lut[tmp2] << 1) | (lut[tmp3] << 2) |
             (lut[tmp4] << 3);
@@ -134,11 +133,6 @@ void sms_vdp_update_cache(int pat) {
 
         tex1 += 16;
         tex4 -= 16;
-
-        tmp1 = *bitplane++;
-        tmp2 = *bitplane++;
-        tmp3 = *bitplane++;
-        tmp4 = *bitplane++;
     }
 
     smsvdp.pattern[pat].dirty = 0;

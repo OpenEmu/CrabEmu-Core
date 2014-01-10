@@ -37,8 +37,8 @@ void terebi_update(int x, int y, int pressed) {
 
     if(x < 0)
         x = 0;
-    else if(x > 255)
-        x = 255;
+    else if(x > 251)
+        x = 251;
 
     if(y < 0)
         y = 0;
@@ -63,12 +63,7 @@ uint8 terebi_mread(uint16 addr) {
         return (terebi_flags & TEREBI_OEKAKI_PRESSED) ? 0 : 1;
     }
     else if(addr == 0xA000) {
-        if((terebi_flags & TEREBI_OEKAKI_PRESSED)) {
-            return (terebi_flags & TEREBI_OEKAKI_AXIS_Y) ? terebi_x : terebi_y;
-        }
-        else {
-            return 0;
-        }
+        return (terebi_flags & TEREBI_OEKAKI_AXIS_Y) ? terebi_x : terebi_y;
     }
 
     return sms_read_map[addr >> 8][addr & 0xFF];
