@@ -103,7 +103,7 @@ static OERingBuffer *ringBuffer;
     [bufLock unlock];
 }
 
-- (BOOL)loadFileAtPath:(NSString *)path
+- (BOOL)loadFileAtPath:(NSString *)path error:(NSError **)error
 {
     romName = [path copy];
     int console = rom_detect_console([path UTF8String]);
