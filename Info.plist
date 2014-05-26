@@ -22,12 +22,46 @@
 	<string>OEGameCoreController</string>
 	<key>OEGameCoreClass</key>
 	<string>SMSGameCore</string>
+	<key>OEGameCoreOptions</key>
+	<dict>
+		<key>openemu.system.colecovision</key>
+		<dict>
+			<key>OEGameCoreRequiresFiles</key>
+			<true/>
+			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OERequiredFiles</key>
+			<array>
+				<dict>
+					<key>Description</key>
+					<string>ColecoVision BIOS</string>
+					<key>MD5</key>
+					<string>2c66f5911e5b42b8ebe113403548eee7</string>
+					<key>Name</key>
+					<string>coleco.rom</string>
+					<key>Size</key>
+					<integer>8192</integer>
+				</dict>
+			</array>
+		</dict>
+		<key>openemu.system.gg</key>
+		<dict>
+			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+		</dict>
+		<key>openemu.system.sg1000</key>
+		<dict>
+			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+		</dict>
+		<key>openemu.system.sms</key>
+		<dict>
+			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+		</dict>
+	</dict>
 	<key>OEGameCorePlayerCount</key>
 	<string>2</string>
-	<key>OEGameCoreRequiresFiles</key>
-	<true/>
-	<key>OEGameCoreSupportsCheatCode</key>
-	<true/>
 	<key>OEProjectURL</key>
 	<string>http://crabemu.sourceforge.net/</string>
 	<key>OESystemIdentifiers</key>
