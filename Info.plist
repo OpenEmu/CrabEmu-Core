@@ -26,6 +26,12 @@
 	<dict>
 		<key>openemu.system.colecovision</key>
 		<dict>
+			<key>OEGameCoreRewindBufferSeconds</key>
+			<integer>3600</integer>
+			<key>OEGameCoreRewindInterval</key>
+			<integer>0</integer>
+			<key>OEGameCoreSupportsRewinding</key>
+			<true/>
 			<key>OEGameCoreRequiresFiles</key>
 			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
@@ -46,16 +52,34 @@
 		</dict>
 		<key>openemu.system.gg</key>
 		<dict>
+			<key>OEGameCoreRewindBufferSeconds</key>
+			<integer>3600</integer>
+			<key>OEGameCoreRewindInterval</key>
+			<integer>0</integer>
+			<key>OEGameCoreSupportsRewinding</key>
+			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
 			<true/>
 		</dict>
 		<key>openemu.system.sg1000</key>
 		<dict>
+			<key>OEGameCoreRewindBufferSeconds</key>
+			<integer>3600</integer>
+			<key>OEGameCoreRewindInterval</key>
+			<integer>0</integer>
+			<key>OEGameCoreSupportsRewinding</key>
+			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
 			<true/>
 		</dict>
 		<key>openemu.system.sms</key>
 		<dict>
+			<key>OEGameCoreRewindBufferSeconds</key>
+			<integer>3600</integer>
+			<key>OEGameCoreRewindInterval</key>
+			<integer>0</integer>
+			<key>OEGameCoreSupportsRewinding</key>
+			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
 			<true/>
 		</dict>
