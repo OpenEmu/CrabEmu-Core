@@ -36,6 +36,8 @@
 
 /* Begin PBXBuildFile section */
 		1B46D09D14293CAD0025EF88 /* libz.1.2.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B46D09C14293CAD0025EF88 /* libz.1.2.5.dylib */; };
+		27E3D4E41B6543BC00D8D8B5 /* fmemopen.c in Sources */ = {isa = PBXBuildFile; fileRef = 27E3D4E21B6543BC00D8D8B5 /* fmemopen.c */; };
+		27E3D4E71B6543D500D8D8B5 /* open_memstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 27E3D4E51B6543D500D8D8B5 /* open_memstream.c */; };
 		3720DB4D0F19510D00744A9A /* CrabEmu.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3720DB4C0F19510D00744A9A /* CrabEmu.icns */; };
 		8D5B49B0048680CD000E48DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		8D5B49B4048680CD000E48DA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7ADFEA557BF11CA2CBB /* Cocoa.framework */; settings = {ATTRIBUTES = (Required, ); }; };
@@ -119,6 +121,10 @@
 		089C167FFE841241C02AAC07 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		1058C7ADFEA557BF11CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		1B46D09C14293CAD0025EF88 /* libz.1.2.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.2.5.dylib; path = usr/lib/libz.1.2.5.dylib; sourceTree = SDKROOT; };
+		27E3D4E21B6543BC00D8D8B5 /* fmemopen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fmemopen.c; path = fmemopen/fmemopen.c; sourceTree = "<group>"; };
+		27E3D4E31B6543BC00D8D8B5 /* fmemopen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fmemopen.h; path = fmemopen/fmemopen.h; sourceTree = "<group>"; };
+		27E3D4E51B6543D500D8D8B5 /* open_memstream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = open_memstream.c; path = fmemopen/open_memstream.c; sourceTree = "<group>"; };
+		27E3D4E61B6543D500D8D8B5 /* open_memstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = open_memstream.h; path = fmemopen/open_memstream.h; sourceTree = "<group>"; };
 		3720DB4C0F19510D00744A9A /* CrabEmu.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = CrabEmu.icns; sourceTree = "<group>"; };
 		8291C4E21489595000A72540 /* OEGGSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEGGSystemResponderClient.h; path = ../OpenEmu/GameGear/OEGGSystemResponderClient.h; sourceTree = "<group>"; };
 		8D5B49B6048680CD000E48DA /* CrabEmu.oecoreplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CrabEmu.oecoreplugin; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -327,9 +333,21 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		27E3D4E11B65439900D8D8B5 /* fmemopen */ = {
+			isa = PBXGroup;
+			children = (
+				27E3D4E21B6543BC00D8D8B5 /* fmemopen.c */,
+				27E3D4E31B6543BC00D8D8B5 /* fmemopen.h */,
+				27E3D4E51B6543D500D8D8B5 /* open_memstream.c */,
+				27E3D4E61B6543D500D8D8B5 /* open_memstream.h */,
+			);
+			name = fmemopen;
+			sourceTree = "<group>";
+		};
 		32C88E010371C26100C91783 /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				27E3D4E11B65439900D8D8B5 /* fmemopen */,
 				B5DA7D8C0F5B28940008F047 /* CrabEmu.h */,
 				9443D45B1715F67D00E452AC /* rom.c */,
 				9443D45C1715F67D00E452AC /* rom.h */,
@@ -657,8 +675,10 @@
 				9443D4431715F44E00E452AC /* 93c46.c in Sources */,
 				9443D4441715F45C00E452AC /* mappers.c in Sources */,
 				9443D4451715F46100E452AC /* sms.c in Sources */,
+				27E3D4E71B6543D500D8D8B5 /* open_memstream.c in Sources */,
 				9443D4461715F46900E452AC /* smsmem.c in Sources */,
 				9443D4471715F47A00E452AC /* terebi.c in Sources */,
+				27E3D4E41B6543BC00D8D8B5 /* fmemopen.c in Sources */,
 				9443D4481715F48300E452AC /* tms9918a.c in Sources */,
 				9443D4491715F4AC00E452AC /* sn76489.c in Sources */,
 				9443D44A1715F4F100E452AC /* smsmem-gg.c in Sources */,
