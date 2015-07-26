@@ -45,6 +45,9 @@
 #include "colecomem.h"
 #include "cheats.h"
 
+#include "fmemopen/fmemopen.h"
+#include "fmemopen/open_memstream.h"
+
 #define SAMPLERATE 44100
 
 @interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient, OEColecoVisionSystemResponderClient>
@@ -245,6 +248,76 @@ static OERingBuffer *ringBuffer;
         return coleco_load_state([fileName fileSystemRepresentation]) == 0;
     else
         return sms_load_state([fileName fileSystemRepresentation]) == 0;
+}
+
+- (NSData *)serializeStateWithError:(NSError **)outError
+{
+    void *bytes;
+    size_t length;
+    FILE *fp = open_memstream((char **)&bytes, &length);
+    
+    int status;
+    if(sms_console == CONSOLE_COLECOVISION) {
+        status = coleco_write_state(fp);
+    }
+    else {
+        status = sms_write_state(fp);
+    }
+    
+    if(status == 0) {
+        fclose(fp);
+        return [NSData dataWithBytesNoCopy:bytes length:length];
+    }
+    else {
+        if(outError) {
+            *outError = [NSError errorWithDomain:OEGameCoreErrorDomain
+                                            code:OEGameCoreCouldNotSaveStateError
+                                        userInfo:@{
+                                                   NSLocalizedDescriptionKey : @"Save state data could not be written",
+                                                   NSLocalizedRecoverySuggestionErrorKey : @"The emulator could not write the state data."
+                                                   }];
+        }
+        
+        fclose(fp);
+        free(bytes);
+        return nil;
+    }
+}
+
+- (BOOL)deserializeState:(NSData *)state withError:(NSError **)outError
+{
+    const void *bytes = [state bytes];
+    size_t length = [state length];
+    
+    FILE *fp = fmemopen((void *)bytes, length, "rb");
+    
+    int status;
+    if(sms_console == CONSOLE_COLECOVISION) {
+        status = coleco_read_state(fp);
+    }
+    else {
+        status = sms_read_state(fp);
+    }
+    fclose(fp);
+    
+    if(status == 0)
+    {
+        return YES;
+    }
+    else
+    {
+        if(outError)
+        {
+            *outError = [NSError errorWithDomain:OEGameCoreErrorDomain
+                                            code:OEGameCoreCouldNotLoadStateError
+                                        userInfo:@{
+                                                   NSLocalizedDescriptionKey : @"The save state data could not be read",
+                                                   NSLocalizedRecoverySuggestionErrorKey : @"Could not load data from the save state"
+                                                   }];
+        }
+        
+        return NO;
+    }
 }
 
 /*

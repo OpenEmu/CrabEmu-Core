@@ -738,3 +738,107 @@ int coleco_load_state(const char *filename __UNUSED__) {
     return rv;
 }
 #endif
+
+
+
+int coleco_write_state(FILE *fp)
+{
+    uint8 data[4];
+    
+    if(!coleco_initialized)
+    /* This shouldn't happen.... */
+        return -1;
+    
+    if(!fp)
+        return -1;
+    
+    fprintf(fp, "CrabEmu Save State");
+    
+    /* Write save state version */
+    data[0] = 0x00;
+    data[1] = 0x02;
+    fwrite(data, 1, 2, fp);
+    
+    /* Write out the Console Metadata block */
+    data[0] = 'C';
+    data[1] = 'O';
+    data[2] = 'N';
+    data[3] = 'S';
+    fwrite(data, 1, 4, fp);             /* Block ID */
+    
+    UINT32_TO_BUF(24, data);
+    fwrite(data, 1, 4, fp);             /* Length */
+    
+    UINT16_TO_BUF(1, data);
+    fwrite(data, 1, 2, fp);             /* Version */
+    fwrite(data, 1, 2, fp);             /* Flags (Importance = 1) */
+    
+    data[0] = data[1] = data[2] = data[3] = 0;
+    fwrite(data, 1, 4, fp);             /* Child pointer */
+    UINT32_TO_BUF(1, data);
+    fwrite(data, 1, 4, fp);             /* Console (1 = ColecoVision) */
+    
+    data[0] = 0;                        /* Console sub-type */
+    data[1] = 0;                        /* Region code */
+    data[2] = sms_region >> 4;          /* Video system */
+    data[3] = 0;                        /* Reserved */
+    fwrite(data, 1, 4, fp);
+    
+    /* Write each block's state */
+    if(coleco_game_write_context(fp)) {
+        return -1;
+    }
+    else if(sms_z80_write_context(fp)) {
+        return -1;
+    }
+    else if(sms_psg_write_context(fp)) {
+        return -1;
+    }
+    else if(sms_vdp_write_context(fp)) {
+        return -1;
+    }
+    else if(coleco_mem_write_context(fp)) {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int coleco_read_state(FILE *fp)
+{
+    char str[19];
+    char byte;
+    int rv;
+    
+    if(!coleco_initialized) {
+        /* This shouldn't happen.... */
+        return -1;
+    }
+    
+    if(!fp)
+        return -1;
+    
+    fread(str, 18, 1, fp);
+    str[18] = 0;
+    if(strcmp("CrabEmu Save State", str)) {
+        return -2;
+    }
+    
+    /* Read save state version */
+    fread(&byte, 1, 1, fp);
+    if(byte != 0x00) {
+        return -2;
+    }
+    
+    fread(&byte, 1, 1, fp);
+    
+    if(byte != 0x02) {
+        return -2;
+    }
+    
+    rv = coleco_load_state_v2(fp);
+    
+    sound_reset_buffer();
+    
+    return rv;
+}

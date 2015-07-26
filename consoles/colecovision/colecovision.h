@@ -59,6 +59,9 @@ extern void coleco_button_released(int player, int button);
 extern int coleco_save_state(const char *fn);
 extern int coleco_load_state(const char *fn);
 
+extern int coleco_write_state(FILE *fp);
+extern int coleco_read_state(FILE *fp);
+
 ENDCLINK
 
 #endif /* !COLECOVISION_H */

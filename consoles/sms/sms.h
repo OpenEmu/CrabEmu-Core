@@ -44,6 +44,9 @@ extern int sms_psg_read_context(const uint8 *buf);
 extern int sms_save_state(const char *filename);
 extern int sms_load_state(const char *filename);
 
+extern int sms_write_state(FILE *fp);
+extern int sms_read_state(FILE *fp);
+
 /* Old button defines. These define the raw bits used for the data. */
 #define SMS_PAD1_UP     0x0001
 #define SMS_PAD1_DOWN   0x0002

@@ -950,3 +950,140 @@ int sms_load_state(const char *filename __UNUSED__) {
     return rv;
 }
 #endif
+
+
+
+int sms_write_state(FILE *fp)
+{
+    uint8 data[4];
+    
+    if(sms_initialized == 0)
+    /* This shouldn't happen.... */
+        return -1;
+    
+    /* Don't let users do this while the bios is running... */
+    if(sms_bios_active)
+        return -42;
+    
+    if(!fp)
+        return -1;
+    
+    fprintf(fp, "CrabEmu Save State");
+    
+    /* Write save state version */
+    data[0] = 0x00;
+    data[1] = 0x02;
+    fwrite(data, 1, 2, fp);
+    
+    /* Write out the Console Metadata block */
+    data[0] = 'C';
+    data[1] = 'O';
+    data[2] = 'N';
+    data[3] = 'S';
+    fwrite(data, 1, 4, fp);             /* Block ID */
+    
+    UINT32_TO_BUF(24, data);
+    fwrite(data, 1, 4, fp);             /* Length */
+    
+    UINT16_TO_BUF(1, data);
+    fwrite(data, 1, 2, fp);             /* Version */
+    fwrite(data, 1, 2, fp);             /* Flags (Importance = 1) */
+    
+    data[0] = data[1] = data[2] = data[3] = 0;
+    fwrite(data, 1, 4, fp);             /* Child pointer */
+    fwrite(data, 1, 4, fp);             /* Console (0 = SMS) */
+    
+    data[0] = sms_console;              /* Console sub-type */
+    data[1] = sms_region & 0x0F;        /* Region code */
+    data[2] = sms_region >> 4;          /* Video system */
+    data[3] = 0;                        /* Reserved */
+    fwrite(data, 1, 4, fp);
+    
+    /* Write each block's state */
+    if(sms_game_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    else if(sms_z80_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    else if(sms_psg_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    else if(sms_vdp_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    else if(sms_mem_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    else if(sms_ym2413_write_context(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    
+    fclose(fp);
+    return 0;
+}
+
+int sms_read_state(FILE *fp)
+{
+    char str[19];
+    char byte;
+    
+    if(sms_initialized == 0) {
+        /* This shouldn't happen.... */
+        return -1;
+    }
+    
+    if(!fp)
+        return -1;
+    
+    fread(str, 18, 1, fp);
+    str[18] = 0;
+    if(strcmp("CrabEmu Save State", str)) {
+        fclose(fp);
+        return -2;
+    }
+    
+    /* Read save state version */
+    fread(&byte, 1, 1, fp);
+    if(byte != 0x00) {
+        fclose(fp);
+        return -2;
+    }
+    
+    fread(&byte, 1, 1, fp);
+    
+    if(byte == 0x01) {
+        /* Read in the current Z80 context */
+        sms_z80_read_context_v1(fp);
+        
+        /* Next, read the current VDP state */
+        sms_vdp_read_context_v1(fp);
+        
+        /* Now, read the current PSG state */
+        sms_psg_read_context_v1(fp);
+        
+        /* Finally, read the current memory contents from the file */
+        sms_mem_read_context_v1(fp);
+    }
+    else if(byte == 0x02) {
+        if(sms_load_state_v2(fp))
+            return -1;
+    }
+    else {
+        /* Unknown version... */
+        fclose(fp);
+        return -2;
+    }
+    
+    fclose(fp);
+    
+    sound_reset_buffer();
+    
+    return 0;
+}
