@@ -54,6 +54,7 @@
     NSLock        *bufLock;
     BOOL           paused;
     NSURL         *romFile;
+    NSMutableDictionary *cheatList;
 }
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 - (int)crabButtonForSG1000Button:(OESG1000Button)button;
@@ -73,7 +74,7 @@ console_t *cur_console;
     {
         bufLock = [[NSLock alloc] init];
         tempBuffer = malloc(256 * 256 * 4);
-
+        cheatList = [[NSMutableDictionary alloc] init];
         ringBuffer = [self ringBufferAtIndex:0];
     }
     return self;
@@ -501,31 +502,47 @@ void gui_set_console(console_t *c)
     // Remove address-value separator
     code = [code stringByReplacingOccurrencesOfString:@"-" withString:@""];
 
+    if (enabled)
+        [cheatList setValue:@YES forKey:code];
+    else
+        [cheatList removeObjectForKey:code];
+
+    sms_cheat_reset();
+
     NSArray *multipleCodes = [[NSArray alloc] init];
-    multipleCodes = [code componentsSeparatedByString:@"+"];
 
-    for (NSString *singleCode in multipleCodes)
+    // Apply enabled cheats found in dictionary
+    for (id key in cheatList)
     {
-        if ([singleCode length] == 8)
+        if ([[cheatList valueForKey:key] isEqual:@YES])
         {
-            // Action Replay GG/SMS format: XXXX-YYYY
-            NSString *address = [singleCode substringWithRange:NSMakeRange(0, 4)];
-            NSString *value = [singleCode substringWithRange:NSMakeRange(4, 4)];
+            // Handle multi-line cheats
+            multipleCodes = [key componentsSeparatedByString:@"+"];
+            for (NSString *singleCode in multipleCodes)
+            {
+                if ([singleCode length] == 8)
+                {
+                    // Action Replay GG/SMS format: XXXX-YYYY
+                    NSString *address = [singleCode substringWithRange:NSMakeRange(0, 4)];
+                    NSString *value = [singleCode substringWithRange:NSMakeRange(4, 4)];
 
-            // Convert AR hex to int
-            uint32_t outAddress, outValue;
-            NSScanner* scanAddress = [NSScanner scannerWithString:address];
-            NSScanner* scanValue = [NSScanner scannerWithString:value];
-            [scanAddress scanHexInt:&outAddress];
-            [scanValue scanHexInt:&outValue];
+                    // Convert AR hex to int
+                    uint32_t outAddress, outValue;
+                    NSScanner *scanAddress = [NSScanner scannerWithString:address];
+                    NSScanner *scanValue = [NSScanner scannerWithString:value];
+                    [scanAddress scanHexInt:&outAddress];
+                    [scanValue scanHexInt:&outValue];
 
-            sms_cheat_t *arCode = (sms_cheat_t *)malloc(sizeof(sms_cheat_t));
-            arCode->ar_code = (outAddress << 16) | outValue;
-            strcpy(arCode->desc, [singleCode UTF8String]);
-            arCode->enabled = 1;
+                    sms_cheat_t *arCode = (sms_cheat_t *)malloc(sizeof(sms_cheat_t));
+                    memset(arCode, 0, sizeof(sms_cheat_t));
+                    arCode->ar_code = (outAddress << 16) | outValue;
+                    strcpy(arCode->desc, [singleCode UTF8String]);
+                    arCode->enabled = 1;
 
-            sms_cheat_enable();
-            sms_cheat_add(arCode);
+                    sms_cheat_add(arCode);
+                    sms_cheat_enable();
+                }
+            }
         }
     }
 }
