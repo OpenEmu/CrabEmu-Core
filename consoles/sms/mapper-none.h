@@ -18,7 +18,7 @@
 */
 
 #ifndef MAPPER_NONE_H
-#define MAPEPR_NONE_H
+#define MAPPER_NONE_H
 
 #include "CrabEmu.h"
 

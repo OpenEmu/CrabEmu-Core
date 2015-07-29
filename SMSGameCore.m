@@ -25,15 +25,12 @@
  */
 
 #import "SMSGameCore.h"
-#import <IOKit/hid/IOHIDLib.h>
 #import <OpenEmuBase/OERingBuffer.h>
 #import <OpenGL/gl.h>
 #import "OESMSSystemResponderClient.h"
 #import "OEGGSystemResponderClient.h"
 #import "OESG1000SystemResponderClient.h"
 #import "OEColecoVisionSystemResponderClient.h"
-
-#define _UINT32
 
 #include "sms.h"
 #include "smsmem.h"
@@ -44,6 +41,7 @@
 #include "colecovision.h"
 #include "colecomem.h"
 #include "cheats.h"
+#include "console.h"
 
 #include "fmemopen/fmemopen.h"
 #include "fmemopen/open_memstream.h"
@@ -52,7 +50,10 @@
 
 @interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient, OEColecoVisionSystemResponderClient>
 {
-    NSString *romName;
+    unsigned char *tempBuffer;
+    NSLock        *bufLock;
+    BOOL           paused;
+    NSURL         *romFile;
 }
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 - (int)crabButtonForSG1000Button:(OESG1000Button)button;
@@ -61,15 +62,9 @@
 
 @implementation SMSGameCore
 
-extern int sms_initialized;
-extern int sms_console;
-extern int coleco_initialized;
-
 // Global variables because the callbacks need to access them...
 static OERingBuffer *ringBuffer;
-/*
- OpenEmu Core internal functions
- */
+console_t *cur_console;
 
 - (id)init
 {
@@ -78,8 +73,7 @@ static OERingBuffer *ringBuffer;
     {
         bufLock = [[NSLock alloc] init];
         tempBuffer = malloc(256 * 256 * 4);
-        
-        position = 0;
+
         ringBuffer = [self ringBufferAtIndex:0];
     }
     return self;
@@ -89,117 +83,97 @@ static OERingBuffer *ringBuffer;
 {
     DLog(@"releasing/deallocating CrabEmu memory");
     free(tempBuffer);
-    
-    sms_initialized = 0;
-    coleco_initialized = 0;
+
+    cur_console->shutdown();
 }
 
-- (void)executeFrame
-{
-    //DLog(@"Executing");
-    //Get a reference to the emulator
-    [bufLock lock];
-    if(sms_console == CONSOLE_COLECOVISION)
-        oldrun = coleco_frame(oldrun, 0);
-    else
-        oldrun = sms_frame(oldrun, 0);
-    [bufLock unlock];
-}
+# pragma mark - Execution
 
 - (BOOL)loadFileAtPath:(NSString *)path error:(NSError **)error
 {
-    romName = [path copy];
+    romFile = [NSURL fileURLWithPath:path];
     int console = rom_detect_console([path UTF8String]);
     DLog(@"Loaded File");
     //TODO: add choice NTSC/PAL
     if(console == CONSOLE_COLECOVISION)
     {
-        NSString *biosPath = [NSString pathWithComponents:@[
-                                    [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) lastObject],
-                                    @"OpenEmu", @"BIOS", @"coleco.rom"]];
+        NSString *biosPath = [[self biosDirectoryPath] stringByAppendingPathComponent:@"coleco.rom"];
         coleco_init(VIDEO_NTSC);
         coleco_mem_load_bios([biosPath UTF8String]);
         coleco_mem_load_rom([path UTF8String]);
     }
     else
     {
-        sms_init(SMS_VIDEO_NTSC, SMS_REGION_DOMESTIC);
+        sms_init(SMS_VIDEO_NTSC, [[self systemRegion] isEqualToString: @"Japan"] ? SMS_REGION_DOMESTIC : SMS_REGION_EXPORT, 0); // 1 = VDP borders
         sms_mem_load_rom([path UTF8String], console);
-        sms_frame(0, 1);
+        cur_console->frame(0);
     }
-    
-    NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
-    
-    NSString *batterySavesDirectory = [self batterySavesDirectoryPath];
-    
-    if([batterySavesDirectory length] != 0)
+
+    if(cur_console->console_type != CONSOLE_COLECOVISION)
     {
-        [[NSFileManager defaultManager] createDirectoryAtPath:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:NULL];
-        
-        NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
-        
-        if(console != CONSOLE_COLECOVISION)
-            sms_read_cartram_from_file([filePath UTF8String]);
+        NSString *extensionlessFilename = [[romFile lastPathComponent] stringByDeletingPathExtension];
+        NSURL *batterySavesDirectory = [NSURL fileURLWithPath:[self batterySavesDirectoryPath]];
+        [[NSFileManager defaultManager] createDirectoryAtURL:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:nil];
+        NSURL *saveFile = [batterySavesDirectory URLByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
+
+        if([saveFile checkResourceIsReachableAndReturnError:nil] && sms_read_cartram_from_file([[saveFile path] UTF8String]) == 0)
+            NSLog(@"CrabEmu: Loaded sram");
     }
 
     return YES;
 }
 
+- (void)executeFrame
+{
+    [bufLock lock];
+    cur_console->frame(0);
+    [bufLock unlock];
+}
+
 - (void)resetEmulation
 {
-    if(sms_console == CONSOLE_COLECOVISION)
-        coleco_soft_reset();
-    else
-        sms_soft_reset();
+    cur_console->soft_reset();
 }
 
 - (void)stopEmulation
 {
-    NSString *path = romName;
-    NSString *extensionlessFilename = [[path lastPathComponent] stringByDeletingPathExtension];
-    
-    NSString *batterySavesDirectory = [self batterySavesDirectoryPath];
-    
-    if([batterySavesDirectory length] != 0)
+    if(cur_console->console_type != CONSOLE_COLECOVISION)
     {
-        [[NSFileManager defaultManager] createDirectoryAtPath:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:NULL];
-        
-        NSLog(@"Trying to save SRAM");
-        
-        NSString *filePath = [batterySavesDirectory stringByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
-        
-        if(sms_console != CONSOLE_COLECOVISION)
-            sms_write_cartram_to_file([filePath UTF8String]);
+        NSString *extensionlessFilename = [[romFile lastPathComponent] stringByDeletingPathExtension];
+        NSURL *batterySavesDirectory = [NSURL fileURLWithPath:[self batterySavesDirectoryPath]];
+        NSURL *saveFile = [batterySavesDirectory URLByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
+
+        cur_console->save_sram([[saveFile path] UTF8String]);
     }
-    
+
     [super stopEmulation];
 }
 
-- (IBAction)pauseEmulation:(id)sender
+- (NSTimeInterval)frameInterval
 {
-    [bufLock lock];
-    sms_z80_nmi();
-    [bufLock unlock];
+    return 60;
 }
+
+# pragma mark - Video
 
 - (OEIntSize)bufferSize
 {
-    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : 256);
+    return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 256, cur_console->console_type == CONSOLE_GG ? 144 : 256);
 }
 
 - (OEIntRect)screenRect
 {
-    return OEIntRectMake(0, 0, sms_console == CONSOLE_GG ? 160 : 256, sms_console == CONSOLE_GG ? 144 : smsvdp.lines);
+    return OEIntRectMake(0, 0, cur_console->console_type == CONSOLE_GG ? 160 : 256, cur_console->console_type == CONSOLE_GG ? 144 : smsvdp.lines);
 }
 
 - (OEIntSize)aspectSize
 {
-    return OEIntSizeMake(sms_console == CONSOLE_GG ? 160 : 4, sms_console == CONSOLE_GG ? 144 : 3);
+    return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 4, cur_console->console_type == CONSOLE_GG ? 144 : 3);
 }
 
 - (const void *)videoBuffer
 {
-    if (sms_console != CONSOLE_GG)
+    if (cur_console->console_type != CONSOLE_GG)
         return smsvdp.framebuffer;
     else
         for (int i = 0; i < 144; i++)
@@ -224,6 +198,8 @@ static OERingBuffer *ringBuffer;
     return GL_RGB8;
 }
 
+# pragma mark - Audio
+
 - (double)audioSampleRate
 {
     return SAMPLERATE;
@@ -234,20 +210,16 @@ static OERingBuffer *ringBuffer;
     return 2;
 }
 
+# pragma mark - Save States
+
 - (BOOL)saveStateToFileAtPath:(NSString *)fileName
 {
-    if(sms_console == CONSOLE_COLECOVISION)
-        return coleco_save_state([fileName fileSystemRepresentation]) == 0;
-    else
-        return sms_save_state([fileName fileSystemRepresentation]) == 0;
+    return cur_console->save_state([fileName fileSystemRepresentation]) == 0;
 }
 
 - (BOOL)loadStateFromFileAtPath:(NSString *)fileName
 {
-    if(sms_console == CONSOLE_COLECOVISION)
-        return coleco_load_state([fileName fileSystemRepresentation]) == 0;
-    else
-        return sms_load_state([fileName fileSystemRepresentation]) == 0;
+    return cur_console->load_state([fileName fileSystemRepresentation]) == 0;
 }
 
 - (NSData *)serializeStateWithError:(NSError **)outError
@@ -255,15 +227,15 @@ static OERingBuffer *ringBuffer;
     void *bytes;
     size_t length;
     FILE *fp = open_memstream((char **)&bytes, &length);
-    
+
     int status;
-    if(sms_console == CONSOLE_COLECOVISION) {
+    if(cur_console->console_type == CONSOLE_COLECOVISION) {
         status = coleco_write_state(fp);
     }
     else {
         status = sms_write_state(fp);
     }
-    
+
     if(status == 0) {
         fclose(fp);
         return [NSData dataWithBytesNoCopy:bytes length:length];
@@ -277,7 +249,7 @@ static OERingBuffer *ringBuffer;
                                                    NSLocalizedRecoverySuggestionErrorKey : @"The emulator could not write the state data."
                                                    }];
         }
-        
+
         fclose(fp);
         free(bytes);
         return nil;
@@ -288,18 +260,18 @@ static OERingBuffer *ringBuffer;
 {
     const void *bytes = [state bytes];
     size_t length = [state length];
-    
+
     FILE *fp = fmemopen((void *)bytes, length, "rb");
-    
+
     int status;
-    if(sms_console == CONSOLE_COLECOVISION) {
+    if(cur_console->console_type == CONSOLE_COLECOVISION) {
         status = coleco_read_state(fp);
     }
     else {
         status = sms_read_state(fp);
     }
     fclose(fp);
-    
+
     if(status == 0)
     {
         return YES;
@@ -315,7 +287,7 @@ static OERingBuffer *ringBuffer;
                                                    NSLocalizedRecoverySuggestionErrorKey : @"Could not load data from the save state"
                                                    }];
         }
-        
+
         return NO;
     }
 }
@@ -337,12 +309,12 @@ int sound_init(int channels, int region)
 
 void sound_shutdown(void)
 {
-    
+
 }
 
 void sound_reset_buffer(void)
 {
-    
+
 }
 
 void gui_set_viewport(int w, int h)
@@ -360,6 +332,13 @@ void gui_set_title(const char *str)
     //NSLog(@"set_title%s", str);
 }
 
+void gui_set_console(console_t *c)
+{
+    cur_console = c;
+}
+
+# pragma mark - Input
+
 - (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
 {
     int btn = -1;
@@ -373,7 +352,7 @@ void gui_set_title(const char *str)
         case OESMSButtonB     : btn = SMS_BUTTON_2; break;
         default : break;
     }
-    
+
     return btn;
 }
 
@@ -391,7 +370,7 @@ void gui_set_title(const char *str)
         case OEGGButtonStart: btn = GAMEGEAR_START; break;
         default : break;
     }
-    
+
     return btn;
 }
 
@@ -408,7 +387,7 @@ void gui_set_title(const char *str)
         case OESG1000Button2:     btn = SMS_BUTTON_2; break;
         default : break;
     }
-    
+
     return btn;
 }
 
@@ -437,7 +416,7 @@ void gui_set_title(const char *str)
         case OEColecoVisionButtonPound       : btn = COLECOVISION_POUND;    break;
         default : break;
     }
-    
+
     return btn;
 }
 
@@ -456,28 +435,23 @@ void gui_set_title(const char *str)
 - (oneway void)didPushSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForButton:button player:player];
-    
     if(btn > -1) sms_button_pressed(player, btn);
 }
 
 - (oneway void)didReleaseSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForButton:button player:player];
-    
     if(btn > -1) sms_button_released(player, btn);
 }
 
 - (oneway void)didPushSMSStartButton;
 {
-    if(sms_console != CONSOLE_GG)
-        [self pauseEmulation:self];
-    else
-        sms_button_pressed(1, GAMEGEAR_START);
+    sms_button_pressed(1, GAMEGEAR_START);
 }
 
 - (oneway void)didReleaseSMSStartButton;
 {
-    
+
 }
 
 - (oneway void)didPushSMSResetButton;
@@ -505,31 +479,31 @@ void gui_set_title(const char *str)
 - (oneway void)didPushColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForColecoVisionButton:button player:player];
-    
     if(btn > -1) coleco_button_pressed(player, btn);
 }
 
 - (oneway void)didReleaseColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
 {
     int btn = [self crabButtonForColecoVisionButton:button player:player];
-    
     if(btn > -1) coleco_button_released(player, btn);
 }
+
+#pragma mark - Cheats
 
 - (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
 {
     // Sanitize
     code = [code stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    
+
     // Remove any spaces
     code = [code stringByReplacingOccurrencesOfString:@" " withString:@""];
-    
+
     // Remove address-value separator
     code = [code stringByReplacingOccurrencesOfString:@"-" withString:@""];
-    
+
     NSArray *multipleCodes = [[NSArray alloc] init];
     multipleCodes = [code componentsSeparatedByString:@"+"];
-    
+
     for (NSString *singleCode in multipleCodes)
     {
         if ([singleCode length] == 8)
@@ -537,19 +511,19 @@ void gui_set_title(const char *str)
             // Action Replay GG/SMS format: XXXX-YYYY
             NSString *address = [singleCode substringWithRange:NSMakeRange(0, 4)];
             NSString *value = [singleCode substringWithRange:NSMakeRange(4, 4)];
-            
+
             // Convert AR hex to int
             uint32_t outAddress, outValue;
             NSScanner* scanAddress = [NSScanner scannerWithString:address];
             NSScanner* scanValue = [NSScanner scannerWithString:value];
             [scanAddress scanHexInt:&outAddress];
             [scanValue scanHexInt:&outValue];
-            
+
             sms_cheat_t *arCode = (sms_cheat_t *)malloc(sizeof(sms_cheat_t));
             arCode->ar_code = (outAddress << 16) | outValue;
             strcpy(arCode->desc, [singleCode UTF8String]);
             arCode->enabled = 1;
-            
+
             sms_cheat_enable();
             sms_cheat_add(arCode);
         }

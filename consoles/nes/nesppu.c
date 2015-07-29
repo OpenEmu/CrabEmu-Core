@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012, 2013 Lawrence Sebald
+    Copyright (C) 2012, 2013, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -50,6 +50,7 @@ static int ppu_patterns_rom = 0;
 static nes_ppu_pattern_t ppu_patterns[512];
 
 static pixel_t *ppu_framebuffer;
+static void (*mmc2_cb)(uint16 pn);
 
 struct ppu_spr {
     int pattern;
@@ -145,6 +146,17 @@ void nes_ppu_fetch_spr_pal(uint8 pal[16]) {
 
 void *nes_ppu_framebuffer(void) {
     return ppu_framebuffer;
+}
+
+void nes_ppu_framesize(uint32_t *x, uint32_t *y) {
+    *x = 256;
+    *y = 256;
+}
+
+void nes_ppu_activeframe(uint32_t *x, uint32_t *y, uint32_t *w, uint32_t *h) {
+    *x = *y = 0;
+    *w = 256;
+    *h = 240;
 }
 
 void nes_ppu_writereg(int reg, uint8 val) {
@@ -255,7 +267,7 @@ void nes_ppu_writereg(int reg, uint8 val) {
 
 uint8 nes_ppu_readreg(int reg) {
     uint8 rv = ppu_regs[reg & 0x07];
-    uint16 addr;
+    uint16 addr, addr2;
 
     switch(reg & 0x07) {
         case 2:
@@ -267,7 +279,7 @@ uint8 nes_ppu_readreg(int reg) {
         case 7:
             /* Grab the address and update what we're looking at for next time
                we try to read/write. */
-            addr = ppu_v & 0x3FFF;
+            addr = addr2 = ppu_v & 0x3FFF;
             ppu_v += (ppu_regs[0] & 0x04) ? 32 : 1;
 
             /* See where we're reading... */
@@ -282,18 +294,26 @@ uint8 nes_ppu_readreg(int reg) {
                 if(ppu_regs[1] & 0x01)
                     rv &= 0x30;
 
-                /* Mask the address for filling the buffer below. */
+                /* Mask the address and fill the buffer. */
                 addr &= 0x2FFF;
+                ppu_buffer = ppu_map[(addr >> 8)][(uint8)addr];
             }
             else {
                 /* Make sure we handle any sort of mirroring caused by accessing
                    0x3000-0x3EFF. */
                 if(addr >= 0x3000)
-                    addr &= 0x2FFF;
-                rv = ppu_buffer;
-            }
+                    addr2 &= 0x2FFF;
 
-            ppu_buffer = ppu_map[(addr >> 8)][(uint8)addr];
+                rv = ppu_buffer;
+                ppu_buffer = ppu_map[(addr2 >> 8)][(uint8)addr2];
+
+                /* Grumble... grumble... Stupid MMC2... */
+                if(mmc2_cb) {
+                    if((addr >= 0x0FD0 && addr < 0x0FF0) ||
+                       (addr >= 0x1FD0 && addr < 0x1FF0))
+                        mmc2_cb(addr >> 4);
+                }
+            }
             break;
     }
 
@@ -400,7 +420,7 @@ static void ppu_calc_spr(void) {
         pal = (attr & 0x03) << 2;
         tex = 0;
         bg = 0;
-        
+
         if(attr & 0x80)
             tex = 2;
         if(attr & 0x40)
@@ -515,6 +535,12 @@ static void ppu_bg_draw(int line __UNUSED__, uint8 *px,
         RENDER_BG_PIXEL();
         RENDER_BG_PIXEL();
 
+        /* If we've got an MMC2 or an MMC4 and we need to set the latches, do
+           so now. */
+        if(mmc2_cb &&
+           (pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE))
+            mmc2_cb(pn);
+
         /* We're done with this tile, move onto the next one */
         if(xc != 31) {
             ++nt;
@@ -596,6 +622,12 @@ static void ppu_bg_skip(int line, uint8 bg_pixels[256 + 16]) {
         SKIP_BG_PIXEL();
         SKIP_BG_PIXEL();
 
+        /* If we've got an MMC2 or an MMC4 and we need to set the latches, do
+           so now. */
+        if(mmc2_cb &&
+           (pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE))
+            mmc2_cb(pn);
+
         /* We're done with this tile, move onto the next one */
         if(xc != 31) {
             ++nt;
@@ -662,7 +694,7 @@ static void ppu_bg_skip(int line, uint8 bg_pixels[256 + 16]) {
 
 static void ppu_spr_draw(int line, uint8 *px, uint8 bg_pixels[256 + 16]) {
     static uint8 col_tab[256 + 16];
-    int i = 0, x, pal;
+    int i = 0, x, pal, pn;
     nes_ppu_pattern_t *pat;
     uint8 *pixels;
     uint8 pixel;
@@ -674,11 +706,12 @@ static void ppu_spr_draw(int line, uint8 *px, uint8 bg_pixels[256 + 16]) {
        in how we deal with it. */
     if(sprs[line][0].spr_num == 0) {
         i = 1;
-        pat = ppu_patterns + sprs[line][0].pattern;
+        pn = sprs[line][0].pattern;
+        pat = ppu_patterns + pn;
 
         /* Update the cache if the pattern is marked as dirty */
         if(pat->dirty)
-            nes_ppu_update_cache(sprs[line][0].pattern);
+            nes_ppu_update_cache(pn);
 
         pixels = &pat->texture[sprs[line][0].tex][sprs[line][0].y << 3];
         x = sprs[line][0].x + 8;
@@ -704,15 +737,22 @@ static void ppu_spr_draw(int line, uint8 *px, uint8 bg_pixels[256 + 16]) {
             RENDER_SPR_PIXEL_FG_SPR0();
             RENDER_SPR_PIXEL_FG_SPR0();
         }
+
+        /* If we've got an MMC2 or an MMC4 and we need to set the latches, do
+           so now. */
+        if(mmc2_cb &&
+           (pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE))
+            mmc2_cb(pn);
     }
 
     /* Go through all the sprites on this line. */
     for(; i < 8 && sprs[line][i].spr_num != 0xFF; ++i) {
-        pat = ppu_patterns + sprs[line][i].pattern;
+        pn = sprs[line][i].pattern;
+        pat = ppu_patterns + pn;
 
         /* Update the cache if the pattern is marked as dirty */
         if(pat->dirty)
-            nes_ppu_update_cache(sprs[line][i].pattern);
+            nes_ppu_update_cache(pn);
 
         pixels = &pat->texture[sprs[line][i].tex][sprs[line][i].y << 3];
         x = sprs[line][i].x + 8;
@@ -738,6 +778,12 @@ static void ppu_spr_draw(int line, uint8 *px, uint8 bg_pixels[256 + 16]) {
             RENDER_SPR_PIXEL_FG();
             RENDER_SPR_PIXEL_FG();
         }
+
+        /* If we've got an MMC2 or an MMC4 and we need to set the latches, do
+           so now. */
+        if(mmc2_cb &&
+           (pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE))
+            mmc2_cb(pn);
     }
 
     /* Set the sprite overflow bit, if appropriate. */
@@ -755,15 +801,18 @@ static void ppu_spr_skip(int line, uint8 bg_pixels[256 + 16]) {
     int x;
     nes_ppu_pattern_t *pat;
     uint8 *pixels;
+    int pn, i = 0;
 
     /* See if sprite 0 is on this line, since its really the only sprite we care
        about for now... */
     if(sprs[line][0].spr_num == 0) {
-        pat = ppu_patterns + sprs[line][0].pattern;
+        i = 1;
+        pn = sprs[line][0].pattern;
+        pat = ppu_patterns + pn;
 
         /* Update the cache if the pattern is marked as dirty */
         if(pat->dirty)
-            nes_ppu_update_cache(sprs[line][0].pattern);
+            nes_ppu_update_cache(pn);
 
         pixels = &pat->texture[sprs[line][0].tex][sprs[line][0].y << 3];
         x = sprs[line][0].x + 8;
@@ -776,6 +825,23 @@ static void ppu_spr_skip(int line, uint8 bg_pixels[256 + 16]) {
         SKIP_SPR_PIXEL_SPR0();
         SKIP_SPR_PIXEL_SPR0();
         SKIP_SPR_PIXEL_SPR0();
+
+        /* If we've got an MMC2 or an MMC4 and we need to set the latches, do
+           so now. */
+        if(mmc2_cb &&
+           (pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE))
+            mmc2_cb(pn);
+    }
+
+    /* We only have to look at the other sprites if we've got either an MMC2 or
+       an MMC4... */
+    if(mmc2_cb) {
+        for(; i < 8 && sprs[line][i].spr_num != 0xFF; ++i) {
+            pn = sprs[line][i].pattern;
+
+            if(pn == 0x0FD || pn == 0x0FE || pn == 0x1FD || pn == 0x1FE)
+                mmc2_cb(pn);
+        }
     }
 
     /* Set the sprite overflow bit, if appropriate. */
@@ -910,6 +976,7 @@ int nes_ppu_init(void) {
     ppu_x = 0;
     ppu_oam_addr = 0;
     ppu_patterns_rom = 0;
+    mmc2_cb = NULL;
 
     for(i = 0; i < 256; ++i) {
         ppu_lut[i] = (i & 0x01) | ((i & 0x02) << 1) | ((i & 0x04) << 2) |
@@ -956,11 +1023,16 @@ int nes_ppu_reset(void) {
     ppu_x = 0;
     ppu_oam_addr = 0;
     ppu_patterns_rom = 0;
+    mmc2_cb = NULL;
 
     memset(ppu_framebuffer, 0, 256 * 256 * sizeof(pixel_t));
     gui_set_aspect(16.0f, 15.0f);
 
     return 0;
+}
+
+void nes_ppu_set_mmc2(void (*cb)(uint16 pn)) {
+    mmc2_cb = cb;
 }
 
 int nes_ppu_shutdown(void) {

@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2007, 2008, 2009, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2007, 2008, 2009, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -62,6 +62,8 @@ extern void sms_mem_handle_ioctl(uint8 data);
 
 extern int sms_mem_load_bios(const char *fn);
 extern int sms_mem_load_rom(const char *fn, int console);
+
+extern int sms_mem_run_bios(int console);
 
 extern int sms_mem_init(void);
 extern int sms_mem_shutdown(void);

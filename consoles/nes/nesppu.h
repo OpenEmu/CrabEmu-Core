@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012, 2013 Lawrence Sebald
+    Copyright (C) 2012, 2013, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -37,7 +37,11 @@ extern void nes_ppu_update_cache(int pat);
 extern const nes_ppu_pattern_t *nes_ppu_fetch_pattern(int pat);
 extern void nes_ppu_fetch_bg_pal(uint8 pal[16]);
 extern void nes_ppu_fetch_spr_pal(uint8 pal[16]);
+
 extern void *nes_ppu_framebuffer(void);
+extern void nes_ppu_framesize(uint32_t *x, uint32_t *y);
+extern void nes_ppu_activeframe(uint32_t *x, uint32_t *y, uint32_t *w,
+                                uint32_t *h);
 
 extern void nes_ppu_writereg(int reg, uint8 value);
 extern uint8 nes_ppu_readreg(int reg);
@@ -52,6 +56,7 @@ extern void nes_ppu_set_tblmirrors(int n1, int n2, int n3, int n4);
 extern void nes_ppu_set_patterntbl(int tbl, uint8 *ptr, int rom);
 
 extern void nes_ppu_execute(int line, int skip);
+extern void nes_ppu_set_mmc2(void (*cb)(uint16 pn));
 
 extern int nes_ppu_init(void);
 extern int nes_ppu_reset(void);

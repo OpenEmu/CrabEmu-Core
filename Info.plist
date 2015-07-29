@@ -17,7 +17,7 @@
 	<key>CFBundleSignature</key>
 	<string>OpEm</string>
 	<key>CFBundleVersion</key>
-	<string>0.2.0.1</string>
+	<string>0.2.1.253</string>
 	<key>NSPrincipalClass</key>
 	<string>OEGameCoreController</string>
 	<key>OEGameCoreClass</key>
@@ -26,15 +26,15 @@
 	<dict>
 		<key>openemu.system.colecovision</key>
 		<dict>
+			<key>OEGameCoreRequiresFiles</key>
+			<true/>
 			<key>OEGameCoreRewindBufferSeconds</key>
 			<integer>3600</integer>
 			<key>OEGameCoreRewindInterval</key>
 			<integer>0</integer>
-			<key>OEGameCoreSupportsRewinding</key>
-			<true/>
-			<key>OEGameCoreRequiresFiles</key>
-			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OEGameCoreSupportsRewinding</key>
 			<true/>
 			<key>OERequiredFiles</key>
 			<array>
@@ -56,9 +56,9 @@
 			<integer>3600</integer>
 			<key>OEGameCoreRewindInterval</key>
 			<integer>0</integer>
-			<key>OEGameCoreSupportsRewinding</key>
-			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OEGameCoreSupportsRewinding</key>
 			<true/>
 		</dict>
 		<key>openemu.system.sg1000</key>
@@ -67,9 +67,9 @@
 			<integer>3600</integer>
 			<key>OEGameCoreRewindInterval</key>
 			<integer>0</integer>
-			<key>OEGameCoreSupportsRewinding</key>
-			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OEGameCoreSupportsRewinding</key>
 			<true/>
 		</dict>
 		<key>openemu.system.sms</key>
@@ -78,9 +78,9 @@
 			<integer>3600</integer>
 			<key>OEGameCoreRewindInterval</key>
 			<integer>0</integer>
-			<key>OEGameCoreSupportsRewinding</key>
-			<true/>
 			<key>OEGameCoreSupportsCheatCode</key>
+			<true/>
+			<key>OEGameCoreSupportsRewinding</key>
 			<true/>
 		</dict>
 	</dict>

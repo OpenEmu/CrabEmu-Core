@@ -1,10 +1,10 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009 Lawrence Sebald
+    Copyright (C) 2009, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -29,7 +29,7 @@
 void scale2x_scale(const pixel_t *inbuf, pixel_t *outbuf, int width,
                    int height) {
     int i;
-    int a, b, c, d, p;
+    pixel_t a, b, c, d, p;
     int neww = (width << 1) - 2;
 
     /* Top row comes first. */
@@ -146,3 +146,8 @@ void scale2x_scale(const pixel_t *inbuf, pixel_t *outbuf, int width,
     *(outbuf + neww + 1) = PIXEL3(a, 0, c, 0, p);   /* Duplicate. */
     *(outbuf + neww) = PIXEL3(a, 0, c, 0, p);
 }
+
+#undef PIXEL1
+#undef PIXEL2
+#undef PIXEL3
+#undef PIXEL4

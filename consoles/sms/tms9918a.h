@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -72,7 +72,15 @@ extern void tms9918a_m1_draw_bg(int line, pixel_t *px);
 extern void tms9918a_m2_draw_bg(int line, pixel_t *px);
 extern void tms9918a_m3_draw_bg(int line, pixel_t *px);
 extern void tms9918a_m023_draw_spr(int line, pixel_t *px);
-void tms9918a_m023_skip_spr(int line);
+extern void tms9918a_m023_skip_spr(int line);
+
+extern void tms9918a_vdp_data_write(uint8 data);
+extern void tms9918a_vdp_ctl_write(uint8 data);
+extern uint8 tms9918a_vdp_data_read(void);
+extern uint8 tms9918a_vdp_status_read(void);
+
+extern void tms9918a_vdp_activeframe(uint32_t *x, uint32_t *y, uint32_t *w,
+                                     uint32_t *h);
 
 ENDCLINK
 

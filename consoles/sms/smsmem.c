@@ -1,7 +1,8 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
+                  2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -79,7 +80,6 @@ static uint32 mapper;
 extern uint16 sms_pad;
 extern int sms_region;
 extern sn76489_t psg;
-extern int sms_console;
 extern eeprom93c46_t e93c46;
 extern int sms_ym2413_enabled;
 
@@ -103,10 +103,13 @@ uint8 sms_dummy_arear[256];
 uint8 sms_dummy_areaw[256];
 uint8 sms_cart_ram[0x8000];
 int sms_bios_active = 0;
+int sms_control_type[2] = { SMS_PADTYPE_CONTROL_PAD, SMS_PADTYPE_CONTROL_PAD };
 static uint8 sms_fm_detect = 0;
 static uint8 sms_ym2413_regs[0x41] = { 0 };
 static int sms_ym2413_in_use = 0;
 static uint32 rom_crc, rom_adler;
+static int gfx_board_nibble[2] = { 0, 0 };
+uint32 sms_gfxbd_data[2] = { 0x0000000F, 0x0000000F };
 
 typedef void (*remap_page_func)();
 remap_page_func sms_mem_remap_page[4];
@@ -201,9 +204,17 @@ static void remap_page0_sms_bios() {
     sms_write_map[2] = sms_dummy_areaw;
     sms_write_map[3] = sms_dummy_areaw;
 
-    for(i = 0x04; i < 0x40; ++i) {
-        sms_read_map[i] = sms_rom_page0 + (i << 8);
-        sms_write_map[i] = sms_dummy_areaw;
+    if(sms_bios_len >= 0x4000) {
+        for(i = 0x04; i < 0x40; ++i) {
+            sms_read_map[i] = sms_rom_page0 + (i << 8);
+            sms_write_map[i] = sms_dummy_areaw;
+        }
+    }
+    else {
+        for(i = 0x04; i < 0x20; ++i) {
+            sms_read_map[i] = sms_read_map[i + 0x20] = sms_rom_page0 + (i << 8);
+            sms_write_map[i] = sms_write_map[i + 0x20] = sms_dummy_areaw;
+        }
     }
 
     sms_z80_set_readmap(sms_read_map);
@@ -255,9 +266,18 @@ static void remap_page1_sms_bios() {
         sms_rom_page1 = sms_bios_rom;
     }
 
-    for(i = 0x40; i < 0x80; ++i) {
-        sms_read_map[i] = sms_rom_page1 + ((i & 0x3F) << 8);
-        sms_write_map[i] = sms_dummy_areaw;
+    if(sms_bios_len >= 0x4000) {
+        for(i = 0x40; i < 0x80; ++i) {
+            sms_read_map[i] = sms_rom_page1 + ((i & 0x3F) << 8);
+            sms_write_map[i] = sms_dummy_areaw;
+        }
+    }
+    else {
+        for(i = 0x40; i < 0x60; ++i) {
+            sms_read_map[i] = sms_read_map[i + 0x20] =
+                sms_rom_page1 + ((i & 0x3F) << 8);
+            sms_write_map[i] = sms_write_map[i + 0x20] = sms_dummy_areaw;
+        }
     }
 
     sms_z80_set_readmap(sms_read_map);
@@ -330,9 +350,18 @@ static void remap_page2_sms_bios() {
         sms_rom_page2 = sms_bios_rom;
     }
 
-    for(i = 0x80; i < 0xC0; ++i) {
-        sms_read_map[i] = sms_rom_page2 + ((i & 0x3F) << 8);
-        sms_write_map[i] = sms_dummy_areaw;
+    if(sms_bios_len >= 0x4000) {
+        for(i = 0x80; i < 0xC0; ++i) {
+            sms_read_map[i] = sms_rom_page2 + ((i & 0x3F) << 8);
+            sms_write_map[i] = sms_dummy_areaw;
+        }
+    }
+    else {
+        for(i = 0x80; i < 0xA0; ++i) {
+            sms_read_map[i] = sms_read_map[i + 0x20] =
+                sms_rom_page2 + ((i & 0x3F) << 8);
+            sms_write_map[i] = sms_write_map[i + 0x20] = sms_dummy_areaw;
+        }
     }
 
     sms_z80_set_readmap(sms_read_map);
@@ -417,10 +446,12 @@ void sms_mem_handle_memctl(uint8 data) {
     if(sms_memctl == data)
         return;
 
-    if(sms_console != CONSOLE_SMS && sms_console != CONSOLE_GG)
+    if(sms_cons._base.console_type != CONSOLE_SMS &&
+       sms_cons._base.console_type != CONSOLE_GG)
         return;
 
-    if(!(data & SMS_MEMCTL_BIOS) && sms_console == CONSOLE_SMS &&
+    if(!(data & SMS_MEMCTL_BIOS) &&
+       sms_cons._base.console_type == CONSOLE_SMS &&
        sms_bios_rom != NULL) {
         sms_mem_remap_page[0] = &remap_page2_sms_bios;
         sms_mem_remap_page[1] = &remap_page0_sms_bios;
@@ -432,7 +463,8 @@ void sms_mem_handle_memctl(uint8 data) {
         sms_z80_set_mwrite16(&sms_mem_sega_mwrite16);
         sms_bios_active = 1;
     }
-    else if(!(data & SMS_MEMCTL_CART) || sms_bios_rom == NULL) {
+    else if((!(data & SMS_MEMCTL_CART) || sms_bios_rom == NULL) &&
+            sms_cart_rom) {
         sms_bios_active = 0;
 
         switch(mapper) {
@@ -538,13 +570,16 @@ void sms_mem_handle_memctl(uint8 data) {
 
 void sms_mem_handle_ioctl(uint8 data) {
     int old, new;
+    uint8 tmp;
 
     /* Make sure we're emulating an export SMS, the Japanese SMS (and earlier
        hardware) did not have the I/O Control Register functionality. */
-    if((sms_console == CONSOLE_SMS && (sms_region & SMS_REGION_DOMESTIC)) ||
-       sms_console == CONSOLE_SG1000)
+    if((sms_cons._base.console_type == CONSOLE_SMS &&
+        (sms_region & SMS_REGION_DOMESTIC)) ||
+       sms_cons._base.console_type == CONSOLE_SG1000)
         return;
 
+    tmp = sms_ioctl;
     sms_ioctl = data;
     old = ((sms_pad & sms_ioctl_input_mask) |
            (sms_ioctl_output_bits & sms_ioctl_output_mask)) ^ SMS_TH_MASK;
@@ -567,9 +602,71 @@ void sms_mem_handle_ioctl(uint8 data) {
    new = ((sms_pad & sms_ioctl_input_mask) |
           (sms_ioctl_output_bits & sms_ioctl_output_mask)) & SMS_TH_MASK;
 
-   if(old & new) {
-       sms_vdp_hcnt_latch();
-   }
+   if(old & new)
+       sms_vdp_hcnt_latch(sms_cycles_elapsed() % SMS_CYCLES_PER_LINE);
+
+    /* Handle any graphics boards hooked up. Information from the SMS Power
+       forums provided by Maxim and Bock here:
+       http://www.smspower.org/forums/viewtopic.php?p=81920#81920 */
+    if(sms_control_type[0] == SMS_PADTYPE_GFX_BOARD) {
+        if((tmp ^ data) & SMS_IOCTL_TH_A_LEVEL)
+            gfx_board_nibble[0] = (gfx_board_nibble[0] + 1) & 7;
+        if(data & SMS_IOCTL_TR_A_LEVEL)
+            gfx_board_nibble[0] = 0;
+    }
+
+    if(sms_control_type[1] == SMS_PADTYPE_GFX_BOARD) {
+        if((tmp ^ data) & SMS_IOCTL_TH_B_LEVEL)
+            gfx_board_nibble[1] = (gfx_board_nibble[1] + 1) & 7;
+        if(data & SMS_IOCTL_TR_B_LEVEL)
+            gfx_board_nibble[1] = 0;
+    }
+}
+
+static uint8 sms_read_controls(uint16 port) {
+    uint16 output = sms_ioctl_output_bits & sms_ioctl_output_mask;
+    uint16 input = sms_pad;
+
+    /* The information here came from the forum thread linked to above... */
+    if(sms_control_type[0] == SMS_PADTYPE_GFX_BOARD) {
+        if(sms_ioctl & SMS_IOCTL_TR_A_LEVEL) {
+            input &= 0xFFE0;
+        }
+        else {
+            input = (input & 0xFFF0) |
+                ((sms_gfxbd_data[0] >> (gfx_board_nibble[0] << 2)) & 0x0F);
+
+            if(gfx_board_nibble[0] == 0)
+                input &= ~SMS_PAD1_TL;
+        }
+    }
+
+    /* This is totally a guess until someone actually tests this out, but it
+       seems logical, at least. */
+    if(sms_control_type[1] == SMS_PADTYPE_GFX_BOARD) {
+        if(sms_ioctl & SMS_IOCTL_TR_B_LEVEL) {
+            input &= 0xF83F;
+        }
+        else {
+            input = (input & 0xFC3F) |
+                (((sms_gfxbd_data[1] >> (gfx_board_nibble[1] << 2)) &
+                  0x0F) <<6);
+
+            if(gfx_board_nibble[1] == 0)
+                input &= ~SMS_PAD2_TL;
+        }
+    }
+
+    input &= sms_ioctl_input_mask;
+
+    if(port & 0x01) {
+        /* I/O port B/misc register */
+        return ((input | output) >> 8) & 0xFF;
+    }
+    else {
+        /* I/O port A/B register */
+        return (input | output) & 0xFF;
+    }
 }
 
 void sms_port_write(uint16 port, uint8 data) {
@@ -654,18 +751,7 @@ uint8 sms_port_read(uint16 port) {
     }
     else {
         if(!(sms_memctl & SMS_MEMCTL_IO)) {
-            if(port & 0x01) {
-                /* I/O port B/misc register */
-                return (((sms_pad & sms_ioctl_input_mask) |
-                         (sms_ioctl_output_bits &
-                          sms_ioctl_output_mask)) >> 8) & 0xFF;
-            }
-            else {
-                /* I/O port A/B register */
-                return ((sms_pad & sms_ioctl_input_mask) |
-                        (sms_ioctl_output_bits &
-                         sms_ioctl_output_mask)) & 0xFF;
-            }
+            return sms_read_controls(port);
         }
         else if(sms_ym2413_enabled && port == 0xF2) {
             sms_ym2413_in_use = 1;
@@ -947,7 +1033,7 @@ static void finalize_load(const char *fn) {
                                  &rom_adler)) == (uint32)-1) {
         mapper = SMS_MAPPER_SEGA;
 
-        if(sms_console != CONSOLE_SG1000) {
+        if(sms_cons._base.console_type != CONSOLE_SG1000) {
             setup_mapper();
 
             if(mapper == SMS_MAPPER_SEGA) {
@@ -979,7 +1065,8 @@ static void finalize_load(const char *fn) {
         }
     }
 
-    if((sms_console == CONSOLE_SG1000 || sms_console == CONSOLE_SC3000) &&
+    if((sms_cons._base.console_type == CONSOLE_SG1000 ||
+        sms_cons._base.console_type == CONSOLE_SC3000) &&
        mapper != SMS_MAPPER_TW_MSX_TYPE_B) {
         for(i = 0; i < 0x08; ++i) {
             sms_read_map[i + 0xC8] = ram + (i << 8);
@@ -1007,11 +1094,11 @@ static void finalize_load(const char *fn) {
         }
     }
 
-    if((sms_console != CONSOLE_SMS || sms_bios_rom == NULL) &&
-       (sms_console != CONSOLE_GG || gg_bios_rom == NULL)) {
+    if((sms_cons._base.console_type != CONSOLE_SMS || sms_bios_rom == NULL) &&
+       (sms_cons._base.console_type != CONSOLE_GG || gg_bios_rom == NULL)) {
         switch(mapper) {
             case SMS_MAPPER_SEGA:
-                if(sms_console != CONSOLE_SG1000) {
+                if(sms_cons._base.console_type != CONSOLE_SG1000) {
                     sms_z80_set_mread(&sms_mem_sega_mread);
                     sms_z80_set_mread16(&sms_mem_sega_mread16);
                     sms_z80_set_mwrite(&sms_mem_sega_mwrite);
@@ -1146,7 +1233,7 @@ static void finalize_load(const char *fn) {
         /* Give a sane default for the SP since we don't have a BIOS. */
         sms_z80_write_reg(SMS_Z80_REG_SP, 0xDFF0);
     }
-    else if(sms_console == CONSOLE_SMS) {
+    else if(sms_cons._base.console_type == CONSOLE_SMS) {
         sms_mem_remap_page[0] = &remap_page2_sms_bios;
         sms_mem_remap_page[1] = &remap_page0_sms_bios;
         sms_mem_remap_page[2] = &remap_page1_sms_bios;
@@ -1160,7 +1247,7 @@ static void finalize_load(const char *fn) {
             sms_mem_janggun_init();
         }
     }
-    else if(sms_console == CONSOLE_GG) {
+    else if(sms_cons._base.console_type == CONSOLE_GG) {
         sms_mem_remap_page[0] = &remap_page2;
         sms_mem_remap_page[1] = &sms_mem_remap_page0_gg_bios;
         sms_mem_remap_page[2] = &remap_page1;
@@ -1182,6 +1269,32 @@ static void finalize_load(const char *fn) {
     else {
         gui_set_title("CrabEmu");
     }
+}
+
+int sms_mem_run_bios(int console) {
+    /* Clear cartram, although it shouldn't be relevant... */
+    memset(sms_cart_ram, 0, 0x8000);
+    cartram_enabled = 0;
+
+    sms_set_console(console);
+
+    sms_cart_rom = NULL;
+    sms_cart_len = 0;
+
+    /* Set up the mapping functions. */
+    sms_mem_remap_page[0] = &remap_page2_sms_bios;
+    sms_mem_remap_page[1] = &remap_page0_sms_bios;
+    sms_mem_remap_page[2] = &remap_page1_sms_bios;
+    sms_mem_remap_page[3] = &remap_page2_sms_bios;
+    sms_z80_set_mread(&sms_mem_sega_mread);
+    sms_z80_set_mread16(&sms_mem_sega_mread16);
+    sms_z80_set_mwrite(&sms_mem_sega_mwrite);
+    sms_z80_set_mwrite16(&sms_mem_sega_mwrite16);
+
+    reorganize_pages();
+    gui_set_title("CrabEmu");
+
+    return 0;
 }
 
 #ifndef NO_ZLIB
@@ -1502,7 +1615,7 @@ int sms_ym2413_write_context(FILE *fp) {
         return 0;
 
     /* Also, this isn't possible on Game Gear */
-    if(sms_console == CONSOLE_GG)
+    if(sms_cons._base.console_type == CONSOLE_GG)
         return 0;
 
     /* Finally, if its not being used, don't bother */
@@ -1664,7 +1777,7 @@ int sms_mem_write_context(FILE *fp) {
     data[3] = 'M';
     fwrite(data, 1, 4, fp);             /* Block ID */
 
-    switch(sms_console) {
+    switch(sms_cons._base.console_type) {
         case CONSOLE_SMS:
         case CONSOLE_GG:
             memlen = 0x2000;
@@ -1717,7 +1830,7 @@ int sms_mem_write_context(FILE *fp) {
     fwrite(data, 1, 4, fp);
 
     /* Write the GG Registers block, if appropriate */
-    if(sms_console == CONSOLE_GG) {
+    if(sms_cons._base.console_type == CONSOLE_GG) {
         data[0] = 'G';
         data[1] = 'G';
         data[2] = 'R';
@@ -1807,7 +1920,7 @@ int sms_mem_read_context(const uint8 *buf) {
 
     /* Check the size */
     BUF_TO_UINT32(buf + 4, len);
-    switch(sms_console) {
+    switch(sms_cons._base.console_type) {
         case CONSOLE_SMS:
         case CONSOLE_GG:
             if(len != 0x2010)
@@ -1990,6 +2103,7 @@ int sms_mem_init(void) {
     sms_gg_regs[6] = 0xFF;
 
     for(i = 0x00; i < 0xC0; ++i) {
+        sms_read_map[i] = sms_dummy_arear;
         sms_write_map[i] = sms_dummy_areaw;
     }
 
@@ -2018,6 +2132,9 @@ int sms_mem_init(void) {
     /* Set the memctl value at address 0xC000 of the SMS' memory. */
     ram[0] = sms_memctl;
     sms_bios_active = 0;
+
+    gfx_board_nibble[0] = gfx_board_nibble[1] = 0;
+    sms_gfxbd_data[0] = sms_gfxbd_data[1] = 0x0000000F;
 
     memset(ram, 0xF0, 8 * 1024);
 
@@ -2057,7 +2174,7 @@ void sms_mem_reset(void) {
     sms_gg_regs[5] = 0x00;
     sms_gg_regs[6] = 0xFF;
 
-    if(sms_console == CONSOLE_SMS && sms_bios_rom != NULL) {
+    if(sms_cons._base.console_type == CONSOLE_SMS && sms_bios_rom != NULL) {
         sms_mem_remap_page[0] = &remap_page2_sms_bios;
         sms_mem_remap_page[1] = &remap_page0_sms_bios;
         sms_mem_remap_page[2] = &remap_page1_sms_bios;
@@ -2065,7 +2182,7 @@ void sms_mem_reset(void) {
         sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_BIOS | SMS_MEMCTL_RAM) ^ 0xFF;
         sms_bios_active = 1;
     }
-    else if(sms_console == CONSOLE_GG && gg_bios_rom != NULL) {
+    else if(sms_cons._base.console_type == CONSOLE_GG && gg_bios_rom != NULL) {
         sms_mem_remap_page[0] = &remap_page2;
         sms_mem_remap_page[1] = &sms_mem_remap_page0_gg_bios;
         sms_mem_remap_page[2] = &remap_page1;
@@ -2086,6 +2203,9 @@ void sms_mem_reset(void) {
     sms_ioctl_output_bits = 0x0000;
     sms_ioctl = SMS_IOCTL_TR_A_DIRECTION | SMS_IOCTL_TH_A_DIRECTION |
                 SMS_IOCTL_TR_B_DIRECTION | SMS_IOCTL_TH_B_DIRECTION;
+
+    gfx_board_nibble[0] = gfx_board_nibble[1] = 0;
+    sms_gfxbd_data[0] = sms_gfxbd_data[1] = 0x0000000F;
 
     memset(ram, 0xF0, 8 * 1024);
 

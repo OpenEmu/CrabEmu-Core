@@ -1,7 +1,8 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
+                  2014, 2015 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -43,8 +44,8 @@
 #include "colecovision.h"
 #include "colecomem.h"
 #include "sn76489.h"
-#include "smsvdp.h"
 #include "smsz80.h"
+#include "tms9918a.h"
 #include "sms.h"
 #include "rom.h"
 
@@ -70,20 +71,22 @@ extern sn76489_t psg;
 uint16 coleco_cont_bits[2];
 
 uint8 coleco_port_read(uint16 port) {
+    uint8 tmp;
+
     switch(port & 0xE0) {
         case 0xA0:
             if(port & 0x01)
-                return sms_vdp_status_read();
+                return tms9918a_vdp_status_read();
             else
-                return sms_vdp_data_read();
+                return tms9918a_vdp_data_read();
 
         case 0xE0:
-            if(cont_mode == 0) {
-                return ~((uint8)(coleco_cont_bits[port & 0x01] & 0xFF));
-            }
-            else {
-                return ~((uint8)(coleco_cont_bits[port & 0x01] >> 8));
-            }
+            if(cont_mode == 0)
+                tmp = ~((uint8)(coleco_cont_bits[(port & 0x02) >> 1] & 0xFF));
+            else
+                tmp = ~((uint8)(coleco_cont_bits[(port & 0x02) >> 1] >> 8));
+
+            return tmp & 0x7f;
 
         default:
             return 0xFF;
@@ -94,10 +97,9 @@ void coleco_port_write(uint16 port, uint8 data) {
     switch(port & 0xE0) {
         case 0xA0:
             if(port & 0x01)
-                sms_vdp_ctl_write(data);
+                tms9918a_vdp_ctl_write(data);
             else
-                sms_vdp_data_write(data);
-
+                tms9918a_vdp_data_write(data);
             break;
 
         case 0x80:
@@ -254,7 +256,7 @@ static int load_gz_rom(const char *fn) {
     len = gzread(fp, cart_rom, 0x100);
 
     while(len != 0 && len != -1) {
-        cart_len += len;
+        cart_len += 0x100;
         tmp = realloc(cart_rom, cart_len + 0x100);
 
         if(!tmp) {
@@ -306,7 +308,7 @@ static int load_bz2_rom(const char *fn) {
     len = BZ2_bzread(fp, cart_rom, 0x100);
 
     while(len != 0 && len != -1) {
-        cart_len += len;
+        cart_len += 0x100;
         tmp = realloc(cart_rom, cart_len + 0x100);
 
         if(!tmp) {
@@ -434,7 +436,7 @@ static int load_zip_rom(const char *fn) {
     unzCloseCurrentFile(fp);
     unzClose(fp);
 
-    cart_len = size;
+    cart_len = realsize;
     finalize_load(fn);
 
     return ROM_LOAD_SUCCESS;
@@ -493,7 +495,7 @@ int coleco_mem_load_rom(const char *fn) {
     fread(cart_rom, size, 1, fp);
     fclose(fp);
 
-    cart_len = size;
+    cart_len = realsize;
     finalize_load(fn);
 
     return ROM_LOAD_SUCCESS;

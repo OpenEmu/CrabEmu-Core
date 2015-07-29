@@ -1080,6 +1080,7 @@ apu_t *apu_create(int sample_rate, int refresh_rate, int sample_bits, boolean st
 {
    apu_t *temp_apu;
 /*    int channel; */
+   (void)stereo;
 
    temp_apu = malloc(sizeof(apu_t));
    if (NULL == temp_apu)

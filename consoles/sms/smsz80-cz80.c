@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009 Lawrence Sebald
+    Copyright (C) 2009, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -198,6 +198,77 @@ uint16 sms_z80_read_reg(int reg) {
     }
 }
 
+void sms_z80_write_reg(int reg, uint16 value) {
+    switch(reg) {
+        case SMS_Z80_REG_B:
+            CZ80.BC.B.H = (uint8)value;
+            break;
+        case SMS_Z80_REG_C:
+            CZ80.BC.B.L = (uint8)value;
+            break;
+        case SMS_Z80_REG_D:
+            CZ80.DE.B.H = (uint8)value;
+            break;
+        case SMS_Z80_REG_E:
+            CZ80.DE.B.L = (uint8)value;
+            break;
+        case SMS_Z80_REG_H:
+            CZ80.HL.B.H = (uint8)value;
+            break;
+        case SMS_Z80_REG_L:
+            CZ80.HL.B.L = (uint8)value;
+            break;
+        case SMS_Z80_REG_F:
+            CZ80.FA.B.H = (uint8)value;
+            break;
+        case SMS_Z80_REG_A:
+            CZ80.FA.B.L = (uint8)value;
+            break;
+        case SMS_Z80_REG_PC:
+            Cz80_Set_PC(&CZ80, value);
+            break;
+        case SMS_Z80_REG_SP:
+            CZ80.SP.W = value;
+            break;
+        case SMS_Z80_REG_IX:
+            CZ80.IX.W = value;
+            break;
+        case SMS_Z80_REG_IY:
+            CZ80.IY.W = value;
+            break;
+        case SMS_Z80_REG_BC:
+            CZ80.BC.W = value;
+            break;
+        case SMS_Z80_REG_DE:
+            CZ80.DE.W = value;
+            break;
+        case SMS_Z80_REG_HL:
+            CZ80.HL.W = value;
+            break;
+        case SMS_Z80_REG_AF:
+            CZ80.FA.W = (value >> 8) | ((value & 0xFF) << 8);
+            break;
+        case SMS_Z80_REG_R:
+            CZ80.R.B.L = (uint8)value;
+            break;
+        case SMS_Z80_REG_I:
+            CZ80.I = (uint8)value;
+            break;
+        case SMS_Z80_REG_BCp:
+            CZ80.BC2.W = value;
+            break;
+        case SMS_Z80_REG_DEp:
+            CZ80.DE2.W = value;
+            break;
+        case SMS_Z80_REG_HLp:
+            CZ80.HL2.W = value;
+            break;
+        case SMS_Z80_REG_AFp:
+            CZ80.FA2.W = (value >> 8) | ((value & 0xFF) << 8);
+            break;
+    }
+}
+
 int sms_z80_write_context(FILE *fp __UNUSED__) {
     /* XXXX */
     return -1;
@@ -205,4 +276,9 @@ int sms_z80_write_context(FILE *fp __UNUSED__) {
 
 void sms_z80_read_context_v1(FILE *fp __UNUSED__) {
     /* XXXX */
+}
+
+int sms_z80_read_context(const uint8 *buf __UNUSED__) {
+    /* XXXX */
+    return -1;
 }

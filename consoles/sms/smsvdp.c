@@ -30,9 +30,14 @@
 #include <malloc.h>
 #endif
 
-extern int sms_console;
 sms_vdp_t smsvdp;
 static uint32 lut[256];
+
+/* Size of the top border for each video mode, in scanlines. */
+static const int top_border[6] = { 27, 11, 0, 54, 38, 30 };
+
+static const int kyoukai1[] = { 216, 232, 240, 240, 256, 264 };
+static const int kyoukai2[] = { 235, 251, 262, 259, 275, 283 };
 
 #ifdef CRABEMU_32BIT_COLOR
 static void update_local_pal_sms(int num) {
@@ -287,6 +292,10 @@ static void sms_vdp_m4_draw_spr(int line, pixel_t *px) {
 
         y = sat[i] + 1;
 
+        /* sat[i] = 255 implies that the sprite should start on line 0. */
+        if(y == 256)
+            y = 0;
+
         /* Check the position of this sprite */
         if(line >= y && line <= y + height - 1) {
             /* If its on this line, make sure that we haven't already rendered
@@ -489,7 +498,39 @@ uint32 sms_vdp_execute(int line, int skip) {
     /* Draw only if the display is enabled */
     if(smsvdp.regs[1] & 0x40 && line < smsvdp.lines) {
         if(!skip) {
-            pixel_t *px = (smsvdp.framebuffer) + (line << 8);
+            pixel_t *px;
+
+#ifndef _arch_dreamcast
+            if(smsvdp.borders)
+                px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x);
+            else
+#endif /* !_arch_dreamcast */
+                px = (smsvdp.framebuffer) + (line << smsvdp.fb_x);
+
+#ifndef _arch_dreamcast
+            /* Fill in the left border, if we're bothering to emulate them.
+               This will also, conveniently, reposition the px pointer to beyond
+               the border for us. */
+            if(smsvdp.borders) {
+                int tmp = (smsvdp.regs[7] & 0x0F) | 0x10;
+                pixel_t col = smsvdp.pal[tmp];
+
+                /* The left border is 13 pixels in size. */
+                *px++ = col;    /* 1 */
+                *px++ = col;    /* 2 */
+                *px++ = col;    /* 3 */
+                *px++ = col;    /* 4 */
+                *px++ = col;    /* 5 */
+                *px++ = col;    /* 6 */
+                *px++ = col;    /* 7 */
+                *px++ = col;    /* 8 */
+                *px++ = col;    /* 9 */
+                *px++ = col;    /* 10 */
+                *px++ = col;    /* 11 */
+                *px++ = col;    /* 12 */
+                *px++ = col;    /* 13 */
+            }
+#endif /* !_arch_dreamcast */
 
             bg_draw(line, px);
             spr_draw(line, px);
@@ -509,6 +550,33 @@ uint32 sms_vdp_execute(int line, int skip) {
                 *px++ = col;    /* 7 */
                 *px++ = col;    /* 8 */
             }
+
+#ifndef _arch_dreamcast
+            /* Fill in the right border, if we're bothering to emulate them. */
+            if(smsvdp.borders) {
+                int tmp = (smsvdp.regs[7] & 0x0F) | 0x10;
+                pixel_t col = smsvdp.pal[tmp];
+                px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x) + 256 +
+                    13;
+
+                /* The right border is 15 pixels in size. */
+                *px++ = col;    /* 1 */
+                *px++ = col;    /* 2 */
+                *px++ = col;    /* 3 */
+                *px++ = col;    /* 4 */
+                *px++ = col;    /* 5 */
+                *px++ = col;    /* 6 */
+                *px++ = col;    /* 7 */
+                *px++ = col;    /* 8 */
+                *px++ = col;    /* 9 */
+                *px++ = col;    /* 10 */
+                *px++ = col;    /* 11 */
+                *px++ = col;    /* 12 */
+                *px++ = col;    /* 13 */
+                *px++ = col;    /* 14 */
+                *px++ = col;    /* 15 */
+            }
+#endif /* !_arch_dreamcast */
         }
         else {
             /* Backgrounds can't actually affect anything status-wise, so there
@@ -518,7 +586,13 @@ uint32 sms_vdp_execute(int line, int skip) {
         }
     }
     else if(line < smsvdp.lines && !skip) {
-        pixel_t *px = (smsvdp.framebuffer) + (line << 8);
+        pixel_t *px;
+#ifndef _arch_dreamcast
+        if(smsvdp.borders)
+            px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x);
+        else
+#endif /* !_arch_dreamcast */
+            px = (smsvdp.framebuffer) + (line << smsvdp.fb_x);
 
         /* Blank the whole scanline. */
         int tmp = (smsvdp.regs[7] & 0x0F) | 0x10;
@@ -527,7 +601,79 @@ uint32 sms_vdp_execute(int line, int skip) {
         for(i = 0; i < 256; ++i) {
             *px++ = col;
         }
+
+#ifndef _arch_dreamcast
+        /* Blank the rest of the scanline as well. */
+        if(smsvdp.borders) {
+            for(i = 0; i < 28; ++i) {
+                *px++ = col;
+            }
+        }
+#endif /* !_arch_dreamcast */
     }
+#ifndef _arch_dreamcast
+    /* If we're emulating borders, then we might have work to do outside the
+       active display period. */
+    else if(smsvdp.borders) {
+        int bb = 0, tb = 512;
+
+        if(smsvdp.vidmode == SMS_VIDEO_NTSC) {
+            switch(smsvdp.lines) {
+                case 192:
+                    bb = kyoukai1[0];
+                    tb = kyoukai2[0];
+                    break;
+
+                case 224:
+                    bb = kyoukai1[1];
+                    tb = kyoukai2[1];
+                    break;
+
+                case 240:
+                    bb = kyoukai1[2];
+                    tb = kyoukai2[2];
+                    break;
+            }
+        }
+        else {
+            switch(smsvdp.lines) {
+                case 192:
+                    bb = kyoukai1[3];
+                    tb = kyoukai2[3];
+                    break;
+
+                case 224:
+                    bb = kyoukai1[4];
+                    tb = kyoukai2[4];
+                    break;
+
+                case 240:
+                    bb = kyoukai1[5];
+                    tb = kyoukai2[5];
+                    break;
+            }
+        }
+
+        if(line < bb) {
+            pixel_t *px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x);
+            int tmp = (smsvdp.regs[7] & 0x0F) | 0x10;
+            pixel_t col = smsvdp.pal[tmp];
+
+            for(i = 0; i < 284; ++i) {
+                *px++ = col;
+            }
+        }
+        else if(line >= tb) {
+            pixel_t *px = (smsvdp.framebuffer) + ((line - tb) << smsvdp.fb_x);
+            int tmp = (smsvdp.regs[7] & 0x0F) | 0x10;
+            pixel_t col = smsvdp.pal[tmp];
+
+            for(i = 0; i < 284; ++i) {
+                *px++ = col;
+            }
+        }
+    }
+#endif /* !_arch_dreamcast */
 
     if(line <= smsvdp.lines) {
         if(smsvdp.linecnt == 0) {
@@ -581,7 +727,14 @@ uint32 tms9918a_vdp_execute(int line, void (*irqfunc)(), int skip) {
     /* Draw only if the display is enabled */
     if((smsvdp.regs[1] & 0x40) && line < 192) {
         if(!skip) {
-            pixel_t *px = (smsvdp.framebuffer) + (line << 8);
+            pixel_t *px;
+#ifndef _arch_dreamcast
+            if(smsvdp.borders)
+                px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x);
+            else
+#endif /* !_arch_dreamcast */
+                px = (smsvdp.framebuffer) + (line << smsvdp.fb_x);
+
 
             bg_draw(line, px);
             spr_draw(line, px);
@@ -594,7 +747,7 @@ uint32 tms9918a_vdp_execute(int line, void (*irqfunc)(), int skip) {
         }
     }
     else if(line < 192 && !skip) {
-        pixel_t *px = (smsvdp.framebuffer) + (line << 8);
+        pixel_t *px = (smsvdp.framebuffer_base) + (line << smsvdp.fb_x);
 
         /* Blank the whole scanline. */
         int tmp = (smsvdp.regs[7] & 0x0F);
@@ -637,7 +790,7 @@ void sms_vdp_data_write(uint8 data) {
             }
             break;
         case 0x03:
-            if(sms_console != CONSOLE_GG) {
+            if(sms_cons._base.console_type != CONSOLE_GG) {
                 smsvdp.cram[smsvdp.addr & 0x1F] = data;
                 update_local_pal_sms(smsvdp.addr & 0x1F);
             }
@@ -738,6 +891,40 @@ void sms_vdp_ctl_write(uint8 data) {
     }
 }
 
+void *sms_vdp_framebuffer(void) {
+    return smsvdp.framebuffer;
+}
+
+void sms_vdp_framesize(uint32_t *x, uint32_t *y) {
+    *x = 1 << smsvdp.fb_x;
+    *y = 1 << smsvdp.fb_y;
+}
+
+void sms_vdp_activeframe(uint32_t *x, uint32_t *y, uint32_t *w, uint32_t *h) {
+    if(sms_cons._base.console_type == CONSOLE_GG) {
+        *x = 48;
+        *y = 24;
+        *w = 160;
+        *h = 144;
+    }
+    else {
+        if(!smsvdp.borders) {
+            *x = *y = 0;
+            *w = 256;
+            *h = smsvdp.lines;
+        }
+        else {
+            *x = *y = 0;
+            *w = 284;
+
+            if(smsvdp.vidmode == SMS_VIDEO_NTSC)
+                *h = 243;
+            else
+                *h = 288;
+        }
+    }
+}
+
 uint8 sms_vdp_vcnt_read(void) {
     return vcnt_tab[smsvdp.line];
 }
@@ -782,15 +969,16 @@ uint8 sms_vdp_status_read(void) {
     return tmp;
 }
 
-void sms_vdp_hcnt_latch(void) {
-    extern int sms_cycles_run, sms_cycles_to_run;
-
-    smsvdp.hcnt = sms_hcnt[(sms_cycles_run + sms_z80_get_cycles()) -
-        (sms_cycles_to_run - SMS_CYCLES_PER_LINE)];
+void sms_vdp_hcnt_latch(int cycles) {
+    smsvdp.hcnt = sms_hcnt[cycles];
 }
 
-int sms_vdp_init(int mode) {
+int sms_vdp_init(int mode, int borders) {
     int i, tmp;
+
+#ifdef _arch_dreamcast
+    (void)borders;
+#endif
 
     /* Initialize the VDP emulation to a sane state */
     smsvdp.code = 0;
@@ -801,6 +989,7 @@ int sms_vdp_init(int mode) {
     smsvdp.linecnt = 0xFF;
     smsvdp.pal_latch = 0;
     smsvdp.hcnt = 0;
+    smsvdp.borders = 0;
 
     /* Set some sane register values */
     smsvdp.regs[0x0] = 0x04;
@@ -859,9 +1048,24 @@ int sms_vdp_init(int mode) {
     }
 
 #ifndef _arch_dreamcast
-    smsvdp.framebuffer = (pixel_t *)malloc(256 * 256 * sizeof(pixel_t));
+    if(!borders) {
+        smsvdp.framebuffer = (pixel_t *)malloc(256 * 256 * sizeof(pixel_t));
 #else
-    smsvdp.framebuffer = (pixel_t *)memalign(32, 256 * 256 * sizeof(pixel_t));
+        smsvdp.framebuffer =
+            (pixel_t *)memalign(32, 256 * 256 * sizeof(pixel_t));
+#endif
+        smsvdp.fb_x = 8;
+        smsvdp.fb_y = 8;
+        smsvdp.borders = 0;
+#ifndef _arch_dreamcast
+    }
+    else {
+        smsvdp.framebuffer = (pixel_t *)malloc(512 * 512 * sizeof(pixel_t));
+
+        smsvdp.fb_x = 9;
+        smsvdp.fb_y = 9;
+        smsvdp.borders = 1;
+    }
 #endif
 
     if(smsvdp.framebuffer == NULL) {
@@ -996,9 +1200,18 @@ void sms_vdp_set_vidmode(int mode, int machine) {
         case 0x0C:
         case 0x0E:
         case 0x0F:
-            bg_draw = &sms_vdp_m4_draw_bg;
-            spr_draw = &sms_vdp_m4_draw_spr;
-            spr_skip = &sms_vdp_m4_skip_spr;
+            if(machine != SMS_VDP_MACHINE_TMS9918A) {
+                bg_draw = &sms_vdp_m4_draw_bg;
+                spr_draw = &sms_vdp_m4_draw_spr;
+                spr_skip = &sms_vdp_m4_skip_spr;
+            }
+            else {
+#ifdef DEBUG
+                fprintf(stderr, "sms_vdp_set_vidmode: Unsupported mode for "
+                        "TMS9918A VDP: 0x%02x.\n", vdp_mode);
+                return;
+#endif
+            }
             break;
 
         default:
@@ -1025,16 +1238,22 @@ void sms_vdp_set_vidmode(int mode, int machine) {
                        192 line mode */
                     vcnt_tab = vcnt_ntsc_192;
                     smsvdp.lines = 192;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[0] << smsvdp.fb_x);
                 }
                 else if(smsvdp.regs[1] & 0x10) {
                     /* M1 is set: 224 line mode */
                     vcnt_tab = vcnt_ntsc_224;
                     smsvdp.lines = 224;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[1] << smsvdp.fb_x);
                 }
                 else if(smsvdp.regs[1] & 0x08) {
                     /* M3 is set: 240 line mode */
                     vcnt_tab = vcnt_ntsc_240;
                     smsvdp.lines = 240;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[2] << smsvdp.fb_x);
                 }
                 else {
                     /* Invalid text mode.... */
@@ -1049,15 +1268,19 @@ void sms_vdp_set_vidmode(int mode, int machine) {
                     /* M1 is not set: 192 line mode */
                     vcnt_tab = vcnt_ntsc_192;
                     smsvdp.lines = 192;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[0] << smsvdp.fb_x);
                 }
             }
             else {
                 /* M4 is not set, use TMS9918 modes */
                 vcnt_tab = vcnt_ntsc_192;
                 smsvdp.lines = 192;
+                smsvdp.framebuffer_base =
+                    smsvdp.framebuffer + (top_border[0] << smsvdp.fb_x);
             }
 
-            if(sms_console != CONSOLE_GG) {
+            if(sms_cons._base.console_type != CONSOLE_GG) {
                 if(smsvdp.lines == 192) {
                     gui_set_aspect(4.0f, 3.0f);
                 }
@@ -1073,6 +1296,13 @@ void sms_vdp_set_vidmode(int mode, int machine) {
             }
         }
         else if(machine == SMS_VDP_MACHINE_SMS1) {
+        }
+        else if(machine == SMS_VDP_MACHINE_TMS9918A) {
+            vcnt_tab = vcnt_ntsc_192;
+            smsvdp.lines = 192;
+            smsvdp.framebuffer_base =
+                smsvdp.framebuffer + (top_border[0] << smsvdp.fb_x);
+            gui_set_aspect(4.0f, 3.0f);
         }
         else {
 #ifdef DEBUG
@@ -1097,16 +1327,22 @@ void sms_vdp_set_vidmode(int mode, int machine) {
                        192 line mode */
                     vcnt_tab = vcnt_pal_192;
                     smsvdp.lines = 192;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[3] << smsvdp.fb_x);
                 }
                 else if(smsvdp.regs[1] & 0x10) {
                     /* M1 is set: 224 line mode */
                     vcnt_tab = vcnt_pal_224;
                     smsvdp.lines = 224;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[4] << smsvdp.fb_x);
                 }
                 else if(smsvdp.regs[1] & 0x08) {
                     /* M3 is set: 240 line mode */
                     vcnt_tab = vcnt_pal_240;
                     smsvdp.lines = 240;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[5] << smsvdp.fb_x);
                 }
                 else {
                     /* Invalid text mode.... */
@@ -1121,15 +1357,19 @@ void sms_vdp_set_vidmode(int mode, int machine) {
                     /* M1 is not set: 192 line mode */
                     vcnt_tab = vcnt_pal_192;
                     smsvdp.lines = 192;
+                    smsvdp.framebuffer_base =
+                        smsvdp.framebuffer + (top_border[3] << smsvdp.fb_x);
                 }
             }
             else {
                 /* M4 is not set, use TMS9918 modes */
                 vcnt_tab = vcnt_pal_192;
                 smsvdp.lines = 192;
+                smsvdp.framebuffer_base =
+                    smsvdp.framebuffer + (top_border[3] << smsvdp.fb_x);
             }
 
-            if(sms_console != CONSOLE_GG) {
+            if(sms_cons._base.console_type != CONSOLE_GG) {
                 if(smsvdp.lines == 192) {
                     gui_set_aspect(4.0f, 3.0f);
                 }
@@ -1145,6 +1385,13 @@ void sms_vdp_set_vidmode(int mode, int machine) {
             }
         }
         else if(machine == SMS_VDP_MACHINE_SMS1) {
+        }
+        else if(machine == SMS_VDP_MACHINE_TMS9918A) {
+            vcnt_tab = vcnt_pal_192;
+            smsvdp.lines = 192;
+            smsvdp.framebuffer_base =
+                smsvdp.framebuffer + (top_border[0] << smsvdp.fb_x);
+            gui_set_aspect(4.0f, 3.0f);
         }
         else {
 #ifdef DEBUG
@@ -1214,9 +1461,8 @@ static int sms_vdp_write_cram_context(FILE *fp) {
     uint8 data[4];
 
     /* Don't write anything for SG-1000, SC-3000, or ColecoVision. */
-    if(sms_console > CONSOLE_GG) {
+    if(sms_cons._base.console_type > CONSOLE_GG)
         return 0;
-    }
 
     data[0] = 'C';
     data[1] = 'R';
@@ -1271,12 +1517,10 @@ int sms_vdp_write_context(FILE *fp) {
     data[3] = '8';
     fwrite(data, 1, 4, fp);             /* Block ID */
 
-    if(sms_console < CONSOLE_SG1000) {
+    if(sms_cons._base.console_type < CONSOLE_SG1000)
         len = 0x4010 + 80 + 48;         /* VRAM + CRAM + this block */
-    }
-    else {
+    else
         len = 0x4010 + 48;              /* VRAM + this block */
-    }
 
     UINT32_TO_BUF(len, data);
     fwrite(data, 1, 4, fp);             /* Length */
@@ -1392,7 +1636,7 @@ int sms_vdp_read_context(const uint8 *buf) {
         ptr += clen;
     }
 
-    if(sms_console != CONSOLE_GG) {
+    if(sms_cons._base.console_type != CONSOLE_GG) {
         for(i = 0; i < 0x20; ++i) {
             update_local_pal_sms(i);
         }
@@ -1442,7 +1686,7 @@ void sms_vdp_read_context_v1(FILE *fp) {
            overwritten before they're used, anyway */
     }
 
-    if(sms_console != CONSOLE_GG) {
+    if(sms_cons._base.console_type != CONSOLE_GG) {
         for(i = 0; i < 0x20; ++i) {
             update_local_pal_sms(i);
         }

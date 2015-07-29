@@ -1,10 +1,10 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012 Lawrence Sebald
+    Copyright (C) 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -42,9 +42,34 @@ ADCMOP:
         FETCH_BYTE(_addr, _tmp);
 ADCOP:
 #ifndef CRAB6502_NO_DECIMAL
+        /* Decimal mode is... ugly. But it should work. */
         if(cpu->p & 0x08) {
-            /* XXXX: Support BCD mode */
-            assert(0);
+            /* Calculate the two halves as well as the Z flag. */
+            uint8 _al = (cpu->a & 0x0F) + (_tmp & 0x0F) + (cpu->p & 0x01);
+            _tmp32 = (cpu->a >> 4) + (_tmp >> 4);
+            cpu->p = (cpu->p & 0x3C) |
+                 (ZNtable[(uint8)(cpu->a + _tmp + (cpu->p & 0x01))] & 0x02);
+
+            /* Adjust the lower half, if needed, adding the half carry to the
+               upper half. */
+            if(_al > 9) {
+                _al += 6;
+                ++_tmp32;
+            }
+
+            /* Set the N flag if the top bit of the upper half is set, as well
+               as the V flag, if needed. */
+            cpu->p |= (_tmp32 & 0x08) << 4 |
+                (((_tmp ^ cpu->a ^ 0x80) & (_tmp ^ (_tmp32 << 4)) & 0x80) >> 1);
+
+            /* Adjust the upper half and set the C flag, if needed. */
+            if(_tmp32 > 9) {
+                _tmp32 += 6;
+                cpu->p |= 0x01;
+            }
+
+            /* Store the final result. */
+            cpu->a = (uint8)((_tmp32 << 4) | (_al & 0x0F));
             break;
         }
 #endif
@@ -193,14 +218,35 @@ ANDOP:
     case 0x6B:  /* (U) ARR imm */
         FETCH_ARG8(_tmp);
 #ifndef CRAB6502_NO_DECIMAL
+        /* Yup... this makes about... zero sense. */
         if(cpu->p & 0x08) {
-            /* XXXX: Support BCD mode */
-            assert(0);
+            uint8 _al, _ah;
+
+            _tmp32 = _tmp = cpu->a & _tmp;
+            _ah = _tmp >> 4;
+            _al = _tmp & 0x0F;
+            _tmp = (_tmp >> 1) | ((cpu->p & 0x01) << 7);
+
+            /* Set all the flags except for C. */
+            cpu->p = (cpu->p & 0x3C) | ZNtable[_tmp] | ((_tmp32 ^ _tmp) & 0x40);
+
+            /* BCD adjust (sorta) the low order bits. */
+            if(_al + (_al & 0x01) > 5)
+                _tmp = (_tmp & 0xf0) | ((_tmp + 6) & 0x0F);
+
+            /* BCD adjust (sorta) the high order bits, and set C if needed. */
+            if(_ah + (_ah & 0x01) > 5) {
+                cpu->p |= 0x01;
+                _tmp = (_tmp + 0x60);
+            }
+
+            cpu->a = _tmp;
+            cycles_done += 2;
             break;
         }
 #endif
         cpu->a = ((cpu->a & _tmp) >> 1) | (cpu->p << 7);
-        cpu->p = (cpu->p & 0x3C) | ((cpu->a >> 6) & 0x01) | 
+        cpu->p = (cpu->p & 0x3C) | ((cpu->a >> 6) & 0x01) |
             (((cpu->a << 1) ^ cpu->a) & 0x40) | ZNtable[cpu->a];
         cycles_done += 2;
         break;
@@ -443,13 +489,13 @@ CMPOP:
         inst = cpu->y;
         cycles_done += 2;
         goto CMPOP;
-        
+
     case 0xC4:  /* CPY zpg */
         FETCH_ARG8(_addr);
         inst = cpu->y;
         cycles_done += 3;
         goto CMPMOP;
-        
+
     case 0xCC:  /* CPY abs */
         FETCH_ARG16(_addr);
         inst = cpu->y;
@@ -793,7 +839,7 @@ LDAMOP:
         FETCH_BYTE(_addr, cpu->a);
 LDAOP:
         cpu->p = (cpu->p & 0x7D) | ZNtable[cpu->a];
-        
+
         break;
 
     case 0xB5:  /* LDA zpg, X */
@@ -1295,17 +1341,32 @@ SAXOP:
 SBCMOP:
         FETCH_BYTE(_addr, _tmp);
 SBCOP:
-#ifndef CRAB6502_NO_DECIMAL
-        if(cpu->p & 0x08) {
-            /* XXXX: Support BCD mode */
-            assert(0);
-            break;
-        }
-#endif
+        /* Flag calculation is the same regardless of whether or not we are in
+           decimal mode. */
         _tmp32 = cpu->a - _tmp - ((cpu->p & 0x01) ^ 0x01);
+        inst = cpu->p;
         cpu->p = (cpu->p & 0x3C) | ZNtable[(uint8)_tmp32] |
             (((~_tmp32) >> 8) & 0x01) |
             (((_tmp ^ cpu->a) & (cpu->a ^ _tmp32) & 0x80) >> 1);
+
+#ifndef CRAB6502_NO_DECIMAL
+        /* If we're in decimal mode, calculate the real value that we want in
+           the accumulator after all is said and done. */
+        if(cpu->p & 0x08) {
+            uint8 _al = (cpu->a & 0x0F) - (_tmp & 0x0F) -
+                ((inst & 0x01) ^ 0x01);
+
+            if(_al & 0xF0)
+                _al = (_al - 6) | 0x10;
+
+            _tmp = (cpu->a >> 4) - (_tmp >> 4) - ((_al & 0x10) >> 4);
+            if(_tmp & 0xF0)
+                _tmp -= 6;
+
+            _tmp32 = (_tmp << 4) | (_al & 0x0F);
+        }
+#endif
+
         cpu->a = (uint8)_tmp32;
         break;
 

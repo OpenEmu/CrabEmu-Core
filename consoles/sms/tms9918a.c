@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -18,6 +18,7 @@
 */
 
 #include "sms.h"
+#include "smsz80.h"
 #include "smsvdp.h"
 #include "tms9918a.h"
 
@@ -364,19 +365,15 @@ void tms9918a_m023_draw_spr(int line, pixel_t *px) {
     for(i = 0; i < 32 && count < 5; ++i) {
         y = sat[i << 2] + 1;
 
-        if(y == 0xD1) {
+        if(y == 0xD1)
             /* End of list marker */
             break;
-        }
-        else if(line < y) {
+        else if(line < y)
             continue;
-        }
-        else if(y + (pattern_size << size_shift) - 1 < line) {
+        else if(y + (pattern_size << size_shift) - 1 < line)
             continue;
-        }
-        else if(++count == 5) {
+        else if(++count == 5)
             break;
-        }
 
         x = sat[(i << 2) + 1];
         pattern = sat[(i << 2) + 2];
@@ -601,7 +598,7 @@ void tms9918a_m023_skip_spr(int line) {
 
         if(y == 0xD1)
             /* End of list marker */
-            return;
+            break;
         else if(line < y)
             continue;
         else if(y + (pattern_size << size_shift) - 1 < line)
@@ -710,6 +707,7 @@ void tms9918a_m023_skip_spr(int line) {
         }
         else if(y == 0xD1) {
             /* Set the fifth sprite bits to the last sprite displayed */
+            smsvdp.status &= 0xE0;
             smsvdp.status |= (i & 0x1F);
         }
         else {
@@ -719,5 +717,114 @@ void tms9918a_m023_skip_spr(int line) {
     }
 }
 
+void tms9918a_vdp_data_write(uint8 data) {
+    /* Clear the bytes written flag */
+    smsvdp.flags &= (~SMS_VDP_FLAG_BYTES_WRITTEN);
+	
+    /* First, update the read buffer */
+    smsvdp.read_buf = data;
+	
+    /* Write the byte to the RAM */
+    smsvdp.vram[smsvdp.addr] = data;
+
+    /* Update the address register, and wrap, if needed */
+    smsvdp.addr = (smsvdp.addr + 1) & 0x3FFF;
+}
+
+static void tms9918a_vdp_reg_write(int reg, uint8 data) {
+    if(reg > 7)
+        return;
+
+    switch(reg) {
+        case 0:
+            smsvdp.regs[0] = data & 0x03;
+            sms_vdp_set_vidmode(smsvdp.vidmode, SMS_VDP_MACHINE_TMS9918A);
+            break;
+
+        case 1:
+            smsvdp.regs[1] = data & 0xfb;
+            sms_vdp_set_vidmode(smsvdp.vidmode, SMS_VDP_MACHINE_TMS9918A);
+
+            if((smsvdp.status & 0x80) && (smsvdp.regs[1] & 0x20))
+                sms_z80_assert_irq();
+            break;
+
+        default:
+            smsvdp.regs[reg] = data;
+            break;
+    }
+}
+
+void tms9918a_vdp_ctl_write(uint8 data) {
+    /* First, update the code/address registers */
+    if(!(smsvdp.flags & SMS_VDP_FLAG_BYTES_WRITTEN)) {
+        /* A multiple of 2 bytes written */
+        smsvdp.addr = (smsvdp.addr & 0x3F00) | (data);
+        smsvdp.addr_latch = data;
+        smsvdp.flags |= SMS_VDP_FLAG_BYTES_WRITTEN;
+
+        return;
+    }
+
+    /* One byte written, write the last one */
+    smsvdp.addr = (data & 0x3F) << 8 | (smsvdp.addr_latch & 0xFF);
+    smsvdp.code = (data & 0xC0) >> 6;
+    smsvdp.flags &= (~SMS_VDP_FLAG_BYTES_WRITTEN);
+
+    /* Code 0 - Read a byte of vram, put it in the buffer, and increment
+       the address (that last part is important!) */
+    if(smsvdp.code == 0x00) {
+        smsvdp.read_buf = smsvdp.vram[smsvdp.addr];
+        smsvdp.addr = (smsvdp.addr + 1) & 0x3FFF;
+    }
+    /* Code 2 - Register Write */
+    else if(smsvdp.code == 0x02) {
+        int reg = data & 0x0F;
+        tms9918a_vdp_reg_write(reg, smsvdp.addr & 0xFF);
+    }
+}
+
+uint8 tms9918a_vdp_data_read(void) {
+    uint8 tmp;
+
+    /* Clear the bytes written flag */
+    smsvdp.flags &= (~SMS_VDP_FLAG_BYTES_WRITTEN);
+
+    /* Fetch what is already in the buffer */
+    tmp = smsvdp.read_buf;
+
+    /* Fetch a new byte for the buffer */
+    smsvdp.read_buf = smsvdp.vram[smsvdp.addr];
+
+    /* And finally, increment the address */
+    smsvdp.addr = (smsvdp.addr + 1) & 0x3FFF;
+
+    return tmp;
+}
+
+uint8 tms9918a_vdp_status_read(void) {
+    uint8 tmp;
+
+    /* Check the interrupt flags */
+    if((smsvdp.status & 0x80))
+        sms_z80_clear_irq();
+
+    /* Clear the bytes written flag and line interrupt pending flag */
+    smsvdp.flags &= ~SMS_VDP_FLAG_BYTES_WRITTEN;
+
+    /* Fetch our flags, so that we can clear stale ones */
+    tmp = smsvdp.status;
+    smsvdp.status &= (~0xE0);
+
+    return tmp;
+}
+
 #undef DRAW_PIXEL
 #undef CHECK_PIXEL
+
+void tms9918a_vdp_activeframe(uint32_t *x, uint32_t *y, uint32_t *w,
+                              uint32_t *h) {
+    *x = *y = 0;
+    *w = 256;
+    *h = 192;
+}

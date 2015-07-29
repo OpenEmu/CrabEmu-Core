@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <mach/task.h>
+#include <mach/mach_init.h>
 #include <mach/semaphore.h>
 
 #include "CrabEmu.h"
@@ -138,8 +139,7 @@ int sound_init(int channels, int region) {
     AudioStreamBasicDescription basic_desc;
     Component comp;
     AURenderCallbackStruct callback;
-    UInt32 bufsz, size;
-    AudioDeviceID dev;
+    UInt32 bufsz;
     int rv = 0;
 
     if(initted)
@@ -212,17 +212,6 @@ int sound_init(int channels, int region) {
     if(error != noErr) {
         rv = -4;
         goto err2;
-    }
-
-    size = sizeof(dev);
-
-    error = AudioUnitGetProperty(outputAU,
-                                 kAudioOutputUnitProperty_CurrentDevice,
-                                 kAudioUnitScope_Global, 0, &dev, &size);
-
-    if(error != noErr) {
-        rv = -5;
-        goto err3;
     }
 
     bufsz = 512;

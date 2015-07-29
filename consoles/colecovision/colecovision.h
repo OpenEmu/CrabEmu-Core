@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012 Lawrence Sebald
+    Copyright (C) 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -21,10 +21,9 @@
 #define COLECOVISION_H
 
 #include "CrabEmu.h"
+#include "console.h"
 
 CLINKAGE
-
-#define CONSOLE_COLECOVISION    5
 
 /* Button defines */
 #define COLECOVISION_UP         0
@@ -48,10 +47,8 @@ CLINKAGE
 
 extern int coleco_init(int video_system);
 extern int coleco_reset(void);
-extern void coleco_soft_reset(void);
+extern int coleco_soft_reset(void);
 extern int coleco_shutdown(void);
-
-extern int coleco_frame(int run, int skip);
 
 extern void coleco_button_pressed(int player, int button);
 extern void coleco_button_released(int player, int button);
@@ -61,6 +58,13 @@ extern int coleco_load_state(const char *fn);
 
 extern int coleco_write_state(FILE *fp);
 extern int coleco_read_state(FILE *fp);
+
+/* Console definition. */
+typedef struct crabemu_colecovision {
+    console_t _base;
+} colecovision_t;
+
+extern colecovision_t colecovision_cons;
 
 ENDCLINK
 

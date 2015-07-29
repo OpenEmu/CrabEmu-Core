@@ -1,10 +1,10 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012, 2013 Lawrence Sebald
+    Copyright (C) 2012, 2013, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -50,35 +50,68 @@ static const float PAL_FPS = 53.355f;
 /* From nesmem.c */
 extern uint16 nes_pad;
 
-/* XXXX */
-extern int sms_console;
-
-int nes_initialized = 0;
 Crab6502_t nescpu;
 
-static int cycles_run, cycles_to_run;
+static int cycles_run, cycles_to_run, scanline;
+
+static void nes_scanline(void);
+static void nes_single_step(void);
+static void nes_finish_frame(void);
+static void nes_finish_scanline(void);
+static int nes_current_scanline(void);
+static int nes_cycles_left(void);
+
+/* Console declaration... */
+nes_t nes_cons = {
+    {
+        CONSOLE_NES,
+        CONSOLE_NES,
+        0,
+        &nes_shutdown,
+        &nes_reset,
+        &nes_soft_reset,
+        &nes_frame,
+        &nes_load_state,
+        &nes_save_state,
+        &nes_mem_write_sram,
+        &nes_button_pressed,
+        &nes_button_released,
+        &nes_ppu_framebuffer,
+        &nes_ppu_framesize,
+        &nes_ppu_activeframe,
+        NULL,
+        &nes_scanline,
+        &nes_single_step,
+        &nes_finish_frame,
+        &nes_finish_scanline,
+        &nes_current_scanline,
+        &nes_cycles_left,
+        NULL
+    }
+};
 
 int nes_init(int video_system) {
-    (void)video_system;
-
-    if(nes_initialized)
+    if(nes_cons._base.initialized)
         return -1;
 
-    sms_console = CONSOLE_NES;
+    gui_set_console((console_t *)&nes_cons);
+
     Crab6502_init(&nescpu);
 
     nes_mem_init();
     nes_ppu_init();
     nes_apu_init();
-    nes_initialized = 1;
 
     sound_init(1, video_system);
+    cycles_run = cycles_to_run = scanline = 0;
+
+    nes_cons._base.initialized = 1;
 
     return 0;
 }
 
 int nes_reset(void) {
-    if(!nes_initialized)
+    if(!nes_cons._base.initialized)
         return -1;
 
     sound_reset_buffer();
@@ -90,12 +123,14 @@ int nes_reset(void) {
     nes_ppu_reset();
     nes_apu_reset();
 
+	cycles_run = cycles_to_run = scanline = 0;
+
     return 0;
 }
 
-void nes_soft_reset(void) {
-    if(!nes_initialized)
-        return;
+int nes_soft_reset(void) {
+    if(!nes_cons._base.initialized)
+        return 0;
 
     sound_reset_buffer();
 
@@ -103,10 +138,14 @@ void nes_soft_reset(void) {
     Crab6502_reset(&nescpu);
     nes_ppu_reset();
     nes_apu_reset();
+
+	cycles_run = cycles_to_run = scanline = 0;
+
+    return 0;
 }
 
 int nes_shutdown(void) {
-    if(!nes_initialized)
+    if(!nes_cons._base.initialized)
         return -1;
 
     nes_ppu_shutdown();
@@ -114,15 +153,13 @@ int nes_shutdown(void) {
     nes_apu_shutdown();
     sound_shutdown();
 
-    nes_initialized = 0;
+    nes_cons._base.initialized = 0;
+
     return 0;
 }
 
-int nes_frame(int run, int skip) {
+void nes_frame(int skip) {
     int i;
-
-    cycles_run = run;
-    cycles_to_run = 113;
 
     /* Lines 0-239 */
     for(i = 0; i < 240; ++i) {
@@ -157,7 +194,199 @@ int nes_frame(int run, int skip) {
 
     nes_apu_execute(cycles_run);
 
-    return cycles_run - cycles_to_run;
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void nes_scanline(void) {
+    cycles_to_run += 113;
+
+    if(scanline < 240) {
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+        nes_ppu_execute(scanline, 0);
+    }
+    else if(scanline == 240) {
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+    }
+    else if(scanline == 241) {
+        nes_ppu_vblank_in();
+
+        if(cycles_to_run == cycles_run)
+            cycles_run += Crab6502_execute(&nescpu, 1);
+
+        if(nes_ppu_vblnmi_enabled())
+            Crab6502_pulse_nmi(&nescpu);
+
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+    }
+    else if(scanline < 261) {
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+    }
+    else if(scanline == 262) {
+        nes_ppu_vblank_out();
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+        nes_apu_execute(cycles_run);
+
+        /* Reset the state for the next frame. */
+        cycles_run -= cycles_to_run;
+        cycles_to_run = 0;
+        scanline = 0;
+    }
+
+    ++scanline;
+}
+
+static void nes_finish_frame(void) {
+    int i = scanline;
+
+    if(scanline < 240)
+        goto line_0;
+    else if(scanline == 240)
+        goto line_240;
+    else if(scanline == 241)
+        goto line_241;
+    else if(scanline >= 242 && scanline < 261)
+        goto line_242;
+    else if(scanline == 261)
+        goto line_261;
+
+line_0:
+    /* Lines 0-239 */
+    for(; i < 240; ++i) {
+        cycles_to_run += 113;
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+        nes_ppu_execute(i, 0);
+    }
+
+line_240:
+    /* Line 240 */
+    cycles_to_run += 113;
+    cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+
+line_241:
+    /* Line 241 */
+    nes_ppu_vblank_in();
+    if(cycles_to_run == cycles_run)
+        cycles_run += Crab6502_execute(&nescpu, 1);
+    if(nes_ppu_vblnmi_enabled())
+        Crab6502_pulse_nmi(&nescpu);
+    cycles_to_run += 113;
+    cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+
+line_242:
+    /* Lines 242-260 */
+    for(i = 242; i < 261; ++i) {
+        cycles_to_run += 113;
+        cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+    }
+
+line_261:
+    /* Line 261 (aka, line -1) */
+    nes_ppu_vblank_out();
+    cycles_to_run += 113;
+    cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+
+    nes_apu_execute(cycles_run);
+
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void nes_single_step(void) {
+    /* If we're at the start of a frame, set things up for the first line. */
+    if(!cycles_to_run)
+        cycles_to_run += 113;
+
+    /* Run the one instruction we need to run. */
+    cycles_run += Crab6502_execute(&nescpu, 1);
+
+    /* See if we finished a scanline... */
+    if(cycles_run >= cycles_to_run) {
+        /* Which scanline did we just finish? */
+        if(scanline < 240) {
+            nes_ppu_execute(scanline, 0);
+            ++scanline;
+            cycles_to_run += 113;
+        }
+        else if(scanline == 240) {
+            ++scanline;
+            cycles_to_run += 113;
+            nes_ppu_vblank_in();
+            if(nes_ppu_vblnmi_enabled())
+                Crab6502_pulse_nmi(&nescpu);
+        }
+        else if(scanline < 260) {
+            ++scanline;
+            cycles_to_run += 113;
+        }
+        else if(scanline == 260) {
+            ++scanline;
+            cycles_to_run += 113;
+            nes_ppu_vblank_out();
+        }
+        else {
+            nes_apu_execute(cycles_run);
+
+            cycles_run -= cycles_to_run;
+            cycles_to_run = 0;
+            scanline = 0;
+        }
+    }
+}
+
+static void nes_finish_scanline(void) {
+    /* Make sure we have something to do... */
+    if(cycles_run >= cycles_to_run)
+        return;
+
+    /* Run instructions to the end of the line. */
+    cycles_run += Crab6502_execute(&nescpu, cycles_to_run - cycles_run);
+
+    /* We should have finished a scanline, so do whatever we need to for that
+       particular line. */
+    if(cycles_run >= cycles_to_run) {
+        /* Which scanline did we just finish? */
+        if(scanline < 240) {
+            nes_ppu_execute(scanline, 0);
+            ++scanline;
+            cycles_to_run += 113;
+        }
+        else if(scanline == 240) {
+            ++scanline;
+            cycles_to_run += 113;
+            nes_ppu_vblank_in();
+            if(nes_ppu_vblnmi_enabled())
+                Crab6502_pulse_nmi(&nescpu);
+        }
+        else if(scanline < 260) {
+            ++scanline;
+            cycles_to_run += 113;
+        }
+        else if(scanline == 260) {
+            ++scanline;
+            cycles_to_run += 113;
+            nes_ppu_vblank_out();
+        }
+        else {
+            nes_apu_execute(cycles_run);
+
+            cycles_run -= cycles_to_run;
+            cycles_to_run = 0;
+            scanline = 0;
+        }
+    }
+}
+
+static int nes_current_scanline(void) {
+    return scanline;
+}
+
+static int nes_cycles_left(void) {
+    return cycles_to_run - cycles_run;
 }
 
 int nes_cycles_elapsed(void) {
@@ -301,8 +530,8 @@ int nes_save_state(const char *filename)
     FILE *fp;
     uint8 data[4];
 
-    if(nes_initialized == 0)
-    /* This shouldn't happen.... */
+    if(!nes_cons._base.initialized)
+        /* This shouldn't happen.... */
         return -1;
 
     fp = fopen(filename, "wb");
@@ -408,10 +637,9 @@ int nes_load_state(const char *filename)
     uint8 *ptr;
     size_t read;
 
-    if(!nes_initialized) {
+    if(!nes_cons._base.initialized)
         /* This shouldn't happen.... */
         return -1;
-    }
 
     fp = fopen(filename, "rb");
     if(!fp)

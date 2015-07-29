@@ -41,6 +41,8 @@ static int32 fds_process(void)
 /* write to registers */
 static void fds_write(uint32 address, uint8 value)
 {
+    (void)address;
+    (void)value;
 }
 
 /* reset state of vrcvi sound channels */

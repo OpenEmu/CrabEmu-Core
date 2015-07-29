@@ -1,20 +1,20 @@
 /*
-	This file is part of CrabEmu.
+    This file is part of CrabEmu.
 
-	Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2014 Lawrence Sebald
 
-	CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    CrabEmu is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
-	CrabEmu is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    CrabEmu is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with CrabEmu; if not, write to the Free Software
-	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU General Public License
+    along with CrabEmu; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include <stdio.h>
@@ -42,16 +42,13 @@
 #include "sound.h"
 #include "cheats.h"
 #include "sdscterminal.h"
+#include "console.h"
 
 uint16 sms_pad = 0xFFFF;
 int sms_psg_enabled = 1;
 int sms_ym2413_enabled = 1;
-int sms_initialized = 0;
 sn76489_t psg;
-int sms_console = CONSOLE_SMS;
 int sms_region = SMS_REGION_EXPORT;
-int sms_cycles_run;
-int sms_cycles_to_run;
 
 uint32 psg_samples[313];
 
@@ -68,8 +65,63 @@ static const float PAL_CLOCKS_PER_SAMPLE = 5.02677579365f;
 
 extern uint8 sms_gg_regs[7];
 extern int sms_bios_active;
+extern int sms_control_type[2];
+extern uint32 sms_gfxbd_data[2];
 
-int sms_init(int video_system, int region) {
+static int cycles_run, cycles_to_run, scanline;
+
+#ifndef _arch_dreamcast
+static void sms_frame(int);
+static void sms_scanline(void);
+static void sms_single_step(void);
+static void sms_finish_frame(void);
+static void sms_finish_scanline(void);
+#endif
+static int sms_current_scanline(void);
+static int sms_cycles_left(void);
+static void sms_set_control(int player, int control);
+
+/* Console declaration... */
+sms_t sms_cons = {
+    {
+        CONSOLE_SMS,
+        CONSOLE_SMS,
+        0,
+        &sms_shutdown,
+        &sms_reset,
+        &sms_soft_reset,
+#ifndef _arch_dreamcast
+        &sms_frame,
+#else
+        NULL,
+#endif
+        &sms_load_state,
+        &sms_save_state,
+        &sms_write_cartram_to_file,
+        &sms_button_pressed,
+        &sms_button_released,
+        &sms_vdp_framebuffer,
+        &sms_vdp_framesize,
+        &sms_vdp_activeframe,
+        &sms_cheat_write,
+#ifndef _arch_dreamcast
+        &sms_scanline,
+        &sms_single_step,
+        &sms_finish_frame,
+        &sms_finish_scanline,
+#else
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#endif
+        &sms_current_scanline,
+        &sms_cycles_left,
+        &sms_set_control
+    }
+};
+
+int sms_init(int video_system, int region, int borders) {
     int i;
     float tmp;
 
@@ -98,7 +150,7 @@ int sms_init(int video_system, int region) {
 
         for(i = 0; i < PAL_LINES_PER_FRAME; ++i) {
             psg_samples[i] = (uint32) (tmp * (i + 1)) -
-                             (uint32) (tmp * i);            
+                             (uint32) (tmp * i);
         }
 
         /* We need 882 samples per frame @ 44100 Hz, 50fps. */
@@ -111,24 +163,27 @@ int sms_init(int video_system, int region) {
 
     sms_region = region;
 
+    gui_set_console((console_t *)&sms_cons);
+
     sms_cheat_init();
 
     sms_mem_init();
-    sms_vdp_init(video_system);
+    sms_vdp_init(video_system, borders);
     sms_z80_init();
 
     sound_init(2, video_system);
 
     sms_sdsc_reset();
     YM2413ResetChip(0);
+    cycles_run = cycles_to_run = scanline = 0;
 
-    sms_initialized = 1;
+    sms_cons._base.initialized = 1;
 
     return 0;
 }
 
-int sms_reset() {
-    if(sms_initialized == 0)
+int sms_reset(void) {
+    if(sms_cons._base.initialized == 0)
         return 0;
 
     if(sms_region & SMS_VIDEO_NTSC) {
@@ -154,12 +209,14 @@ int sms_reset() {
 
     sms_sdsc_reset();
 
+    cycles_run = cycles_to_run = scanline = 0;
+
     return 0;
 }
 
-void sms_soft_reset() {
-    if(sms_initialized == 0)
-        return;
+int sms_soft_reset(void) {
+    if(sms_cons._base.initialized == 0)
+        return 0;
 
     YM2413ResetChip(0);
 
@@ -170,9 +227,13 @@ void sms_soft_reset() {
     sms_vdp_reset();
 
     sms_sdsc_reset();
+
+    cycles_run = cycles_to_run = scanline = 0;
+
+    return 0;
 }
 
-int sms_shutdown() {
+int sms_shutdown(void) {
     sms_cheat_shutdown();
     sms_mem_shutdown();
     sms_vdp_shutdown();
@@ -182,19 +243,40 @@ int sms_shutdown() {
 
     /* Reset a few things in case we reinit later. */
     sms_pad = 0xFFFF;
-    sms_initialized = 0;
+    sms_cons._base.initialized = 0;
+    sms_cons._base.console_type = CONSOLE_SMS;
 
     return 0;
 }
 
 #ifndef _arch_dreamcast
-int sms_frame(int run, int skip) {
-    int16 buf[882 << 1], fmbuf[882 << 1];
-    int line, total_lines, tmp, samples = 0;
+static __INLINE__ int update_sound(int16 buf[], int start, int line) {
+    int16 fmbuf[16];    /* More than we'll need, but meh. */
+    int16 tmp;
     uint32 i;
 
-    sms_cycles_run = run;
-    sms_cycles_to_run = 0;
+    if(sms_psg_enabled)
+        sn76489_execute_samples(&psg, buf + start, psg_samples[line]);
+    else
+        memset(buf + start, 0, psg_samples[line] << 2);
+
+    if(sms_ym2413_enabled) {
+        YM2413UpdateOne(0, fmbuf, psg_samples[line]);
+
+        /* Mix in the FM unit's samples */
+        for(i = 0; i < psg_samples[line]; ++i) {
+            tmp = (fmbuf[i << 1] + fmbuf[(i << 1) + 1]) / 2;
+            buf[(i << 1) + start] += tmp;
+            buf[(i << 1) + 1 + start] += tmp;
+        }
+    }
+
+    return start + (psg_samples[line] << 1);
+}
+
+static void sms_frame(int skip) {
+    int16 buf[882 << 1];
+    int samples = 0, total_lines, line;
 
     if(sms_region & SMS_VIDEO_NTSC)
         total_lines = NTSC_LINES_PER_FRAME;
@@ -202,40 +284,159 @@ int sms_frame(int run, int skip) {
         total_lines = PAL_LINES_PER_FRAME;
 
     for(line = 0; line < total_lines; ++line) {
-        sms_cycles_to_run += SMS_CYCLES_PER_LINE;
+        cycles_to_run += SMS_CYCLES_PER_LINE;
         sms_cheat_frame();
 
-        sms_cycles_run += sms_vdp_execute(line, skip);
-        sms_cycles_run += sms_z80_run(sms_cycles_to_run - sms_cycles_run);
+        cycles_run += sms_vdp_execute(line, skip);
+        cycles_run += sms_z80_run(cycles_to_run - cycles_run);
 
-        if(sms_psg_enabled) {
-            sn76489_execute_samples(&psg, buf + samples, psg_samples[line]);
-        }
-        else {
-            memset(buf + samples, 0, psg_samples[line] << 2);
-        }
-
-        if(sms_ym2413_enabled) {
-            YM2413UpdateOne(0, fmbuf, psg_samples[line]);
-
-            /* Mix in the FM unit's samples */
-            for(i = 0; i < psg_samples[line]; ++i) {
-                tmp = (fmbuf[i << 1] + fmbuf[(i << 1) + 1]) / 2;
-                buf[(i << 1) + samples] += tmp;
-                buf[(i << 1) + 1 + samples] += tmp;
-            }
-        }
-
-        samples += psg_samples[line] << 1;
+        samples = update_sound(buf, samples, line);
     }
 
-#ifndef TIMING_TEST
     sound_update_buffer(buf, samples << 1);
+
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void sms_scanline(void) {
+    int16 buf[882 << 1];
+    int total_lines, samples = 0;
+
+    cycles_to_run += SMS_CYCLES_PER_LINE;
+    sms_cheat_frame();
+
+    /* Run the VDP and Z80 for the whole line. */
+    cycles_run += sms_vdp_execute(scanline, 0);
+    cycles_run += sms_z80_run(cycles_to_run - cycles_run);
+
+    samples = update_sound(buf, 0, scanline);
+    sound_update_buffer(buf, samples << 1);
+
+    /* See if we hit the end of a frame by running this scanline. */
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    if(++scanline == total_lines) {
+        /* Reset the state for the next frame. */
+        cycles_run -= cycles_to_run;
+        cycles_to_run = 0;
+        scanline = 0;
+    }
+}
+
+static void sms_single_step(void) {
+    int16 buf[882 << 1];
+    int total_lines, run;
+
+    /* If we're at the start of a frame, set things up for the first line. Also,
+       if we finished a line last time (or are starting a new frame), run the
+       VDP for the line. */
+    if(!cycles_to_run || cycles_run >= cycles_to_run) {
+        cycles_to_run += SMS_CYCLES_PER_LINE;
+        sms_cheat_frame();
+        if((run = sms_vdp_execute(scanline, 0))) {
+            cycles_run += run;
+            return;
+        }
+    }
+
+    /* Run our one instruction. */
+    cycles_run += sms_z80_run(1);
+
+    /* Did we finish a line? */
+    if(cycles_run >= cycles_to_run) {
+        run = update_sound(buf, 0, scanline);
+        sound_update_buffer(buf, run << 1);
+
+        /* Was it the last line in the frame? */
+        if(sms_region & SMS_VIDEO_NTSC)
+            total_lines = NTSC_LINES_PER_FRAME;
+        else
+            total_lines = PAL_LINES_PER_FRAME;
+
+        if(++scanline == total_lines) {
+            /* Reset the state for the next frame. */
+            cycles_run -= cycles_to_run;
+            cycles_to_run = 0;
+            scanline = 0;
+        }
+    }
+}
+
+static void sms_finish_frame(void) {
+    int16 buf[882 << 1];
+    int samples = 0, total_lines, line;
+
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    for(line = scanline; line < total_lines; ++line) {
+        cycles_to_run += SMS_CYCLES_PER_LINE;
+        sms_cheat_frame();
+
+        cycles_run += sms_vdp_execute(line, 0);
+        cycles_run += sms_z80_run(cycles_to_run - cycles_run);
+
+        samples = update_sound(buf, samples, line);
+    }
+
+    sound_update_buffer(buf, samples << 1);
+
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void sms_finish_scanline(void) {
+    int16 buf[882 << 1];
+    int total_lines, samples = 0;
+
+    /* Make sure we have something to do. */
+    if(cycles_run >= cycles_to_run)
+        return;
+    
+    /* Run the Z80 for the rest of the line. The VDP should've already been
+       run. */
+    cycles_run += sms_z80_run(cycles_to_run - cycles_run);
+
+    samples = update_sound(buf, 0, scanline);
+    sound_update_buffer(buf, samples << 1);
+
+    /* See if we hit the end of a frame by finishing this line. */
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    if(++scanline == total_lines) {
+        /* Reset the state for the next frame. */
+        cycles_run -= cycles_to_run;
+        cycles_to_run = 0;
+        scanline = 0;
+    }
+}
+
 #endif
 
-    return sms_cycles_run - sms_cycles_to_run;
+static void sms_set_control(int player, int control) {
+    /* Verify what we got from the ui... */
+    if(player < 0 || player > 1)
+        return;
+
+    if(control < SMS_PADTYPE_NONE || control > SMS_PADTYPE_GFX_BOARD)
+        return;
+
+    /* Set the control type. */
+    sms_control_type[player] = control;
 }
-#endif
 
 void sms_button_pressed(int player, int button) {
     uint16 mask = 0;
@@ -243,35 +444,57 @@ void sms_button_pressed(int player, int button) {
     if(player < 1 || player > 2)
         return;
 
-    if(button < SMS_UP || button > SMS_CONSOLE_RESET || button == SMS_QUIT)
-        return;
-
-    switch(button) {
-        case SMS_UP:
-        case SMS_DOWN:
-        case SMS_LEFT:
-        case SMS_RIGHT:
-        case SMS_BUTTON_1:
-        case SMS_BUTTON_2:
-            mask = (player == 1) ? (1 << button) : (1 << (button + 6));
-            break;
-
-        case SMS_CONSOLE_RESET:
-            mask = SMS_RESET;
-            break;
-
-        case GAMEGEAR_START:
-            if(sms_console == CONSOLE_GG) {
-                sms_gg_regs[0] &= 0x7F;
-            }
-            else if(sms_console == CONSOLE_SMS) {
-                sms_z80_nmi();
-            }
+    if(sms_control_type[player - 1] == SMS_PADTYPE_CONTROL_PAD) {
+        if(button < SMS_UP || button > SMS_CONSOLE_RESET || button == SMS_QUIT)
             return;
-    }
 
-    /* Update the pad */
-    sms_pad &= ~mask;
+        switch(button) {
+            case SMS_UP:
+            case SMS_DOWN:
+            case SMS_LEFT:
+            case SMS_RIGHT:
+            case SMS_BUTTON_1:
+            case SMS_BUTTON_2:
+                mask = (player == 1) ? (1 << button) : (1 << (button + 6));
+                break;
+
+            case SMS_CONSOLE_RESET:
+                mask = SMS_RESET;
+                break;
+
+            case GAMEGEAR_START:
+                if(sms_cons._base.console_type == CONSOLE_GG) {
+                    sms_gg_regs[0] &= 0x7F;
+                }
+                else if(sms_cons._base.console_type == CONSOLE_SMS) {
+                    sms_z80_nmi();
+                }
+                return;
+        }
+
+        /* Update the pad */
+        sms_pad &= ~mask;
+    }
+    else if(sms_control_type[player - 1] == SMS_PADTYPE_GFX_BOARD) {
+        switch(button) {
+            case SMS_GFXBD_1:
+            case SMS_GFXBD_2:
+            case SMS_GFXBD_3:
+                sms_gfxbd_data[player - 1] &= ~(1 << button);
+                break;
+
+            case SMS_CONSOLE_RESET:
+                sms_pad &= ~SMS_RESET;
+                break;
+
+            case GAMEGEAR_START:
+                if(sms_cons._base.console_type == CONSOLE_GG)
+                    sms_gg_regs[0] &= 0x7F;
+                else if(sms_cons._base.console_type == CONSOLE_SMS)
+                    sms_z80_nmi();
+                break;
+        }
+    }
 }
 
 void sms_button_released(int player, int button) {
@@ -280,32 +503,52 @@ void sms_button_released(int player, int button) {
     if(player < 1 || player > 2)
         return;
 
-    if(button < SMS_UP || button > SMS_CONSOLE_RESET || button == SMS_QUIT)
-        return;
-
-    switch(button) {
-        case SMS_UP:
-        case SMS_DOWN:
-        case SMS_LEFT:
-        case SMS_RIGHT:
-        case SMS_BUTTON_1:
-        case SMS_BUTTON_2:
-            mask = (player == 1) ? (1 << button) : (1 << (button + 6));
-            break;
-
-        case SMS_CONSOLE_RESET:
-            mask = SMS_RESET;
-            break;
-
-        case GAMEGEAR_START:
-            if(sms_console == CONSOLE_GG) {
-                sms_gg_regs[0] |= 0x80;
-            }
+    if(sms_control_type[player - 1] == SMS_PADTYPE_CONTROL_PAD) {
+        if(button < SMS_UP || button > SMS_CONSOLE_RESET || button == SMS_QUIT)
             return;
-    }
 
-    /* Update the pad */
-    sms_pad |= mask;
+        switch(button) {
+            case SMS_UP:
+            case SMS_DOWN:
+            case SMS_LEFT:
+            case SMS_RIGHT:
+            case SMS_BUTTON_1:
+            case SMS_BUTTON_2:
+                mask = (player == 1) ? (1 << button) : (1 << (button + 6));
+                break;
+
+            case SMS_CONSOLE_RESET:
+                mask = SMS_RESET;
+                break;
+
+            case GAMEGEAR_START:
+                if(sms_cons._base.console_type == CONSOLE_GG) {
+                    sms_gg_regs[0] |= 0x80;
+                }
+                return;
+        }
+
+        /* Update the pad */
+        sms_pad |= mask;
+    }
+    else if(sms_control_type[player - 1] == SMS_PADTYPE_GFX_BOARD) {
+        switch(button) {
+            case SMS_GFXBD_1:
+            case SMS_GFXBD_2:
+            case SMS_GFXBD_3:
+                sms_gfxbd_data[player - 1] |= (1 << button);
+                break;
+
+            case SMS_CONSOLE_RESET:
+                sms_pad |= SMS_RESET;
+                break;
+
+            case GAMEGEAR_START:
+                if(sms_cons._base.console_type == CONSOLE_GG)
+                    sms_gg_regs[0] |= 0x80;
+                break;
+        }
+    }
 }
 
 void sms_set_console(int console) {
@@ -342,7 +585,19 @@ void sms_set_console(int console) {
             return;
     }
 
-    sms_console = console;
+    sms_cons._base.console_type = console;
+}
+
+static int sms_current_scanline(void) {
+    return scanline;
+}
+
+static int sms_cycles_left(void) {
+    return cycles_to_run - cycles_run;
+}
+
+int sms_cycles_elapsed(void) {
+    return cycles_run + sms_z80_get_cycles();
 }
 
 static void sms_psg_read_context_v1(FILE *fp) {
@@ -476,7 +731,7 @@ int sms_save_state(const char *filename)
     FILE *fp;
     uint8 data[4];
 
-    if(sms_initialized == 0)
+    if(sms_cons._base.initialized == 0)
         /* This shouldn't happen.... */
         return -1;
 
@@ -513,10 +768,10 @@ int sms_save_state(const char *filename)
     fwrite(data, 1, 4, fp);             /* Child pointer */
     fwrite(data, 1, 4, fp);             /* Console (0 = SMS) */
 
-    data[0] = sms_console;              /* Console sub-type */
-    data[1] = sms_region & 0x0F;        /* Region code */
-    data[2] = sms_region >> 4;          /* Video system */
-    data[3] = 0;                        /* Reserved */
+    data[0] = sms_cons._base.console_type;  /* Console sub-type */
+    data[1] = sms_region & 0x0F;            /* Region code */
+    data[2] = sms_region >> 4;              /* Video system */
+    data[3] = 0;                            /* Reserved */
     fwrite(data, 1, 4, fp);
 
     /* Write each block's state */
@@ -548,7 +803,7 @@ int sms_save_state(const char *filename)
     fclose(fp);
     return 0;
 }
-    
+
 #ifdef _arch_dreamcast
 int sms_save_state(const char *filename) {
     char tmpfn[4096];
@@ -703,7 +958,7 @@ static int sms_cons_read_context(const uint8 *buf) {
     if(cons != 0)
         return -1;
 
-    if(buf[20] != sms_console)
+    if(buf[20] != sms_cons._base.console_type)
         return -1;
 
     region = buf[21] == 1 ? SMS_REGION_DOMESTIC : SMS_REGION_EXPORT;
@@ -837,7 +1092,7 @@ int sms_load_state(const char *filename)
     FILE *fp;
     char byte;
 
-    if(sms_initialized == 0) {
+    if(sms_cons._base.initialized == 0) {
         /* This shouldn't happen.... */
         return -1;
     }
@@ -951,54 +1206,52 @@ int sms_load_state(const char *filename __UNUSED__) {
 }
 #endif
 
-
-
 int sms_write_state(FILE *fp)
 {
     uint8 data[4];
-    
-    if(sms_initialized == 0)
+
+    if(sms_cons._base.initialized == 0)
     /* This shouldn't happen.... */
         return -1;
-    
+
     /* Don't let users do this while the bios is running... */
     if(sms_bios_active)
         return -42;
-    
+
     if(!fp)
         return -1;
-    
+
     fprintf(fp, "CrabEmu Save State");
-    
+
     /* Write save state version */
     data[0] = 0x00;
     data[1] = 0x02;
     fwrite(data, 1, 2, fp);
-    
+
     /* Write out the Console Metadata block */
     data[0] = 'C';
     data[1] = 'O';
     data[2] = 'N';
     data[3] = 'S';
     fwrite(data, 1, 4, fp);             /* Block ID */
-    
+
     UINT32_TO_BUF(24, data);
     fwrite(data, 1, 4, fp);             /* Length */
-    
+
     UINT16_TO_BUF(1, data);
     fwrite(data, 1, 2, fp);             /* Version */
     fwrite(data, 1, 2, fp);             /* Flags (Importance = 1) */
-    
+
     data[0] = data[1] = data[2] = data[3] = 0;
     fwrite(data, 1, 4, fp);             /* Child pointer */
     fwrite(data, 1, 4, fp);             /* Console (0 = SMS) */
-    
-    data[0] = sms_console;              /* Console sub-type */
-    data[1] = sms_region & 0x0F;        /* Region code */
-    data[2] = sms_region >> 4;          /* Video system */
-    data[3] = 0;                        /* Reserved */
+
+    data[0] = sms_cons._base.console_type;  /* Console sub-type */
+    data[1] = sms_region & 0x0F;            /* Region code */
+    data[2] = sms_region >> 4;              /* Video system */
+    data[3] = 0;                            /* Reserved */
     fwrite(data, 1, 4, fp);
-    
+
     /* Write each block's state */
     if(sms_game_write_context(fp)) {
         fclose(fp);
@@ -1024,7 +1277,7 @@ int sms_write_state(FILE *fp)
         fclose(fp);
         return -1;
     }
-    
+
     fclose(fp);
     return 0;
 }
@@ -1033,31 +1286,31 @@ int sms_read_state(FILE *fp)
 {
     char str[19];
     char byte;
-    
-    if(sms_initialized == 0) {
+
+    if(sms_cons._base.initialized == 0) {
         /* This shouldn't happen.... */
         return -1;
     }
-    
+
     if(!fp)
         return -1;
-    
+
     fread(str, 18, 1, fp);
     str[18] = 0;
     if(strcmp("CrabEmu Save State", str)) {
         fclose(fp);
         return -2;
     }
-    
+
     /* Read save state version */
     fread(&byte, 1, 1, fp);
     if(byte != 0x00) {
         fclose(fp);
         return -2;
     }
-    
+
     fread(&byte, 1, 1, fp);
-    
+
     if(byte == 0x01) {
         /* Read in the current Z80 context */
         sms_z80_read_context_v1(fp);
@@ -1080,10 +1333,10 @@ int sms_read_state(FILE *fp)
         fclose(fp);
         return -2;
     }
-    
+
     fclose(fp);
-    
+
     sound_reset_buffer();
-    
+
     return 0;
 }

@@ -32,8 +32,6 @@ static int chr_is_rom;
 static int prg_banks;
 static int chr_size;
 
-#include <stdio.h>
-
 static void fill_prg_map(void) {
     int i, page;
 
@@ -44,14 +42,18 @@ static void fill_prg_map(void) {
         /* Which page should be swapped? */
         if(bank_regs[0] & 0x04) {
             for(i = 0; i < 0x40; ++i) {
-                nes_read_map[i + 0x80] = nes_prg_rom + ((i + page) << 8);
-                nes_read_map[i + 0xC0] = nes_prg_rom + ((i + 0x3C0) << 8);
+                nes_read_map[i + 0x80] = nes_prg_rom +
+                    (((i + page) << 8) & (nes_prg_rom_size - 1));
+                nes_read_map[i + 0xC0] = nes_prg_rom +
+                    (((i + 0x3C0) << 8) & (nes_prg_rom_size - 1));
             }
         }
         else {
             for(i = 0; i < 0x40; ++i) {
-                nes_read_map[i + 0x80] = nes_prg_rom + (i << 8);
-                nes_read_map[i + 0xC0] = nes_prg_rom + ((i + page) << 8);
+                nes_read_map[i + 0x80] = nes_prg_rom +
+                    ((i << 8) & (nes_prg_rom_size - 1));
+                nes_read_map[i + 0xC0] = nes_prg_rom +
+                    (((i + page) << 8) & (nes_prg_rom_size - 1));
             }
         }
     }
@@ -59,7 +61,8 @@ static void fill_prg_map(void) {
         page = (bank_regs[3] & 0x0E) << 6;
 
         for(i = 0; i < 0x80; ++i) {
-            nes_read_map[i + 0x80] = nes_prg_rom + ((i + page) << 8);
+            nes_read_map[i + 0x80] = nes_prg_rom +
+                (((i + page) << 8) & (nes_prg_rom_size - 1));
         }
     }
 

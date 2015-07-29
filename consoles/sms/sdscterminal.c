@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009 Lawrence Sebald
+    Copyright (C) 2009, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -29,7 +29,6 @@
 
 #ifdef ENABLE_SDSC_TERMINAL
 
-extern int sms_console;
 extern uint8 *sms_read_map[256];
 
 static char console[25][80 * 2];
@@ -128,10 +127,10 @@ static void sdsc_write_format_num(void) {
             if(cur_data_param1 < 0x10) {
                 num = smsvdp.regs[cur_data_param1];
             }
-            else if(sms_console == CONSOLE_SMS) {
+            else if(sms_cons._base.console_type == CONSOLE_SMS) {
                 num = smsvdp.cram[cur_data_param1 - 0x10];
             }
-            else if(sms_console == CONSOLE_GG) {
+            else if(sms_cons._base.console_type == CONSOLE_GG) {
                 addr = (cur_data_param1 - 0x10) << 1;
                 num = smsvdp.cram[addr] | (smsvdp.cram[addr + 1] << 8);
                 bits = 16;

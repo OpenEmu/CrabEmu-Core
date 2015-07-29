@@ -1,10 +1,10 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012, 2013 Lawrence Sebald
+    Copyright (C) 2012, 2013, 2015 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -86,6 +86,8 @@ static int guess_on_ext(const char *fn, int chop) {
         return CONSOLE_COLECOVISION;
     else if(!strcasecmp(ext, ".nes"))
         return CONSOLE_NES;
+    else if(!strcasecmp(ext, ".ch8") || !strcasecmp(ext, ".c8"))
+        return CONSOLE_CHIP8;
 #ifndef NO_ZLIB
     else if(!strcasecmp(ext, ".gz"))
         return TYPE_GZIP;

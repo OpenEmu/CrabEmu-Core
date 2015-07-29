@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -36,6 +36,7 @@
 #include "colecomem.h"
 #include "sms.h"
 #include "smsvdp.h"
+#include "tms9918a.h"
 #include "sn76489.h"
 #include "smsz80.h"
 #include "sound.h"
@@ -45,12 +46,9 @@
 extern int sms_psg_enabled;
 extern sn76489_t psg;
 extern uint32 psg_samples[313];
-extern int sms_console;
 extern int sms_region;
 extern int sms_cycles_run;
 extern int sms_cycles_to_run;
-
-int coleco_initialized = 0;
 
 extern uint16 coleco_cont_bits[2];
 
@@ -67,6 +65,58 @@ static const float PAL_CLOCKS_PER_SAMPLE = 5.02677579365f;
 
 static const int cont_bit_map[12] = {
     0x02, 0x08, 0x03, 0x0D, 0x0C, 0x01, 0x0A, 0x0E, 0x04, 0x06, 0x05, 0x09
+};
+
+static int cycles_run, cycles_to_run, scanline;
+
+#ifndef _arch_dreamcast
+static void coleco_frame(int);
+static void coleco_scanline(void);
+static void coleco_single_step(void);
+static void coleco_finish_frame(void);
+static void coleco_finish_scanline(void);
+#endif
+static int coleco_current_scanline(void);
+static int coleco_cycles_left(void);
+
+/* Console declaration... */
+colecovision_t colecovision_cons = {
+    {
+        CONSOLE_COLECOVISION,
+        CONSOLE_COLECOVISION,
+        0,
+        &coleco_shutdown,
+        &coleco_reset,
+        &coleco_soft_reset,
+#ifndef _arch_dreamcast
+        &coleco_frame,
+#else
+        NULL,
+#endif
+        &coleco_load_state,
+        &coleco_save_state,
+        NULL,                       /* save_sram */
+        &coleco_button_pressed,
+        &coleco_button_released,
+        &sms_vdp_framebuffer,
+        &sms_vdp_framesize,
+        &tms9918a_vdp_activeframe,
+        NULL,                       /* save_cheats */
+#ifndef _arch_dreamcast
+		&coleco_scanline,
+		&coleco_single_step,
+		&coleco_finish_frame,
+		&coleco_finish_scanline,
+#else
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#endif
+		&coleco_current_scanline,
+		&coleco_cycles_left,
+        NULL                        /* set_control */
+    }
 };
 
 int coleco_init(int video_system) {
@@ -109,33 +159,34 @@ int coleco_init(int video_system) {
     }
 
     sms_region = region;
-    sms_console = CONSOLE_COLECOVISION;
+
+    gui_set_console((console_t *)&colecovision_cons);
 
     coleco_mem_init();
 
-    sms_vdp_init(video_system);
+    sms_vdp_init(video_system, 0);
     sms_z80_init();
     sound_init(2, video_system);
 
     sms_z80_set_pread(&coleco_port_read);
     sms_z80_set_pwrite(&coleco_port_write);
+    cycles_run = cycles_to_run = scanline = 0;
 
-    coleco_initialized = 1;
+    colecovision_cons._base.initialized = 1;
+
     return 0;
 }
 
 int coleco_reset(void) {
-    if(coleco_initialized == 0)
+    if(!colecovision_cons._base.initialized)
         return 0;
 
-    if(sms_region & SMS_VIDEO_NTSC) {
+    if(sms_region & SMS_VIDEO_NTSC)
         sn76489_reset(&psg, NTSC_Z80_CLOCK, 44100.0f,
                       SN76489_NOISE_BITS_NORMAL, SN76489_NOISE_TAPPED_NORMAL);
-    }
-    else {
+    else
         sn76489_reset(&psg, PAL_Z80_CLOCK, 44100.0f,
                       SN76489_NOISE_BITS_NORMAL, SN76489_NOISE_TAPPED_NORMAL);
-    }
 
     sound_reset_buffer();
 
@@ -144,18 +195,22 @@ int coleco_reset(void) {
 
     sms_z80_reset();
     sms_vdp_reset();
+    cycles_run = cycles_to_run = scanline = 0;
 
     return 0;
 }
 
-void coleco_soft_reset(void) {
-    if(coleco_initialized == 0)
-        return;
+int coleco_soft_reset(void) {
+    if(!colecovision_cons._base.initialized)
+        return 0;
 
     coleco_mem_reset();
 
     sms_z80_reset();
     sms_vdp_reset();
+    cycles_run = cycles_to_run = scanline = 0;
+
+    return 0;
 }
 
 int coleco_shutdown(void) {
@@ -166,7 +221,7 @@ int coleco_shutdown(void) {
     sound_shutdown();
 
     /* Reset a few things in case we reinit later. */
-    coleco_initialized = 0;
+    colecovision_cons._base.initialized = 0;
 
     return 0;
 }
@@ -253,12 +308,18 @@ void coleco_button_released(int player, int button) {
 }
 
 #ifndef _arch_dreamcast
-int coleco_frame(int run, int skip) {
-    int16 buf[882 << 1];
-    int line, total_lines, samples = 0;
+static __INLINE__ int update_sound(int16 buf[], int start, int line) {    
+    if(sms_psg_enabled)
+        sn76489_execute_samples(&psg, buf + start, psg_samples[line]);
+    else
+        memset(buf + start, 0, psg_samples[line] << 2);
 
-    sms_cycles_run = run;
-    sms_cycles_to_run = 0;
+    return start + (psg_samples[line] << 1);
+}
+
+static void coleco_frame(int skip) {
+    int16 buf[882 << 1];
+    int samples = 0, total_lines, line;
 
     if(sms_region & SMS_VIDEO_NTSC)
         total_lines = NTSC_LINES_PER_FRAME;
@@ -266,28 +327,150 @@ int coleco_frame(int run, int skip) {
         total_lines = PAL_LINES_PER_FRAME;
 
     for(line = 0; line < total_lines; ++line) {
-        sms_cycles_to_run += SMS_CYCLES_PER_LINE;
+        cycles_to_run += SMS_CYCLES_PER_LINE;
 
-        sms_cycles_run += tms9918a_vdp_execute(line, &sms_z80_nmi, skip);
-        sms_cycles_run += sms_z80_run(sms_cycles_to_run - sms_cycles_run);
+        cycles_run += tms9918a_vdp_execute(line, &sms_z80_nmi, skip);
+        cycles_run += sms_z80_run(cycles_to_run - cycles_run);
 
-        if(sms_psg_enabled) {
-            sn76489_execute_samples(&psg, buf + samples, psg_samples[line]);
-        }
-        else {
-            memset(buf + samples, 0, psg_samples[line] << 2);
-        }
-
-        samples += psg_samples[line] << 1;
+        samples = update_sound(buf, samples, line);
     }
 
-#ifndef TIMING_TEST
     sound_update_buffer(buf, samples << 1);
-#endif
 
-    return sms_cycles_run - sms_cycles_to_run;
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void coleco_scanline(void) {
+    int16 buf[882 << 1];
+    int total_lines, samples = 0;
+
+    cycles_to_run += SMS_CYCLES_PER_LINE;
+
+    /* Run the VDP and Z80 for the whole line. */
+    cycles_run += sms_vdp_execute(scanline, 0);
+    cycles_run += tms9918a_vdp_execute(scanline, &sms_z80_nmi, 0);
+
+    samples = update_sound(buf, 0, scanline);
+    sound_update_buffer(buf, samples << 1);
+
+    /* See if we hit the end of a frame by running this scanline. */
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    if(++scanline == total_lines) {
+        /* Reset the state for the next frame. */
+        cycles_run -= cycles_to_run;
+        cycles_to_run = 0;
+        scanline = 0;
+    }
+}
+
+static void coleco_single_step(void) {
+    int16 buf[882 << 1];
+    int total_lines, run;
+
+    /* If we're at the start of a frame, set things up for the first line. Also,
+       if we finished a line last time (or are starting a new frame), run the
+       VDP for the line. */
+    if(!cycles_to_run || cycles_run >= cycles_to_run) {
+        cycles_to_run += SMS_CYCLES_PER_LINE;
+        if((run = tms9918a_vdp_execute(scanline, &sms_z80_nmi, 0))) {
+            cycles_run += run;
+            return;
+        }
+    }
+
+    /* Run our one instruction. */
+    cycles_run += sms_z80_run(1);
+
+    /* Did we finish a line? */
+    if(cycles_run >= cycles_to_run) {
+        run = update_sound(buf, 0, scanline);
+        sound_update_buffer(buf, run << 1);
+
+        /* Was it the last line in the frame? */
+        if(sms_region & SMS_VIDEO_NTSC)
+            total_lines = NTSC_LINES_PER_FRAME;
+        else
+            total_lines = PAL_LINES_PER_FRAME;
+
+        if(++scanline == total_lines) {
+            /* Reset the state for the next frame. */
+            cycles_run -= cycles_to_run;
+            cycles_to_run = 0;
+            scanline = 0;
+        }
+    }
+}
+
+static void coleco_finish_frame(void) {
+    int16 buf[882 << 1];
+    int samples = 0, total_lines, line;
+
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    for(line = scanline; line < total_lines; ++line) {
+        cycles_to_run += SMS_CYCLES_PER_LINE;
+
+        cycles_run += tms9918a_vdp_execute(scanline, &sms_z80_nmi, 0);
+        cycles_run += sms_z80_run(cycles_to_run - cycles_run);
+
+        samples = update_sound(buf, samples, line);
+    }
+
+    sound_update_buffer(buf, samples << 1);
+
+    /* Reset the state for the next frame. */
+    cycles_run -= cycles_to_run;
+    cycles_to_run = 0;
+    scanline = 0;
+}
+
+static void coleco_finish_scanline(void) {
+    int16 buf[882 << 1];
+    int total_lines, samples = 0;
+
+    /* Make sure we have something to do. */
+    if(cycles_run >= cycles_to_run)
+        return;
+
+    /* Run the Z80 for the rest of the line. The VDP should've already been
+       run. */
+    cycles_run += sms_z80_run(cycles_to_run - cycles_run);
+
+    samples = update_sound(buf, 0, scanline);
+    sound_update_buffer(buf, samples << 1);
+
+    /* See if we hit the end of a frame by finishing this line. */
+    if(sms_region & SMS_VIDEO_NTSC)
+        total_lines = NTSC_LINES_PER_FRAME;
+    else
+        total_lines = PAL_LINES_PER_FRAME;
+
+    if(++scanline == total_lines) {
+        /* Reset the state for the next frame. */
+        cycles_run -= cycles_to_run;
+        cycles_to_run = 0;
+        scanline = 0;
+    }
 }
 #endif
+
+static int coleco_current_scanline(void) {
+    return scanline;
+}
+
+static int coleco_cycles_left(void) {
+    return cycles_to_run - cycles_run;
+}
 
 #ifdef _arch_dreamcast
 static int coleco_save_state_int(const char *filename)
@@ -298,7 +481,7 @@ int coleco_save_state(const char *filename)
     FILE *fp;
     uint8 data[4];
 
-    if(!coleco_initialized)
+    if(!colecovision_cons._base.initialized)
     /* This shouldn't happen.... */
         return -1;
 
@@ -641,7 +824,7 @@ int coleco_load_state(const char *filename)
     char byte;
     int rv;
 
-    if(!coleco_initialized) {
+    if(!colecovision_cons._base.initialized) {
         /* This shouldn't happen.... */
         return -1;
     }
@@ -739,51 +922,49 @@ int coleco_load_state(const char *filename __UNUSED__) {
 }
 #endif
 
-
-
 int coleco_write_state(FILE *fp)
 {
     uint8 data[4];
-    
-    if(!coleco_initialized)
+
+    if(!colecovision_cons._base.initialized)
     /* This shouldn't happen.... */
         return -1;
-    
+
     if(!fp)
         return -1;
-    
+
     fprintf(fp, "CrabEmu Save State");
-    
+
     /* Write save state version */
     data[0] = 0x00;
     data[1] = 0x02;
     fwrite(data, 1, 2, fp);
-    
+
     /* Write out the Console Metadata block */
     data[0] = 'C';
     data[1] = 'O';
     data[2] = 'N';
     data[3] = 'S';
     fwrite(data, 1, 4, fp);             /* Block ID */
-    
+
     UINT32_TO_BUF(24, data);
     fwrite(data, 1, 4, fp);             /* Length */
-    
+
     UINT16_TO_BUF(1, data);
     fwrite(data, 1, 2, fp);             /* Version */
     fwrite(data, 1, 2, fp);             /* Flags (Importance = 1) */
-    
+
     data[0] = data[1] = data[2] = data[3] = 0;
     fwrite(data, 1, 4, fp);             /* Child pointer */
     UINT32_TO_BUF(1, data);
     fwrite(data, 1, 4, fp);             /* Console (1 = ColecoVision) */
-    
+
     data[0] = 0;                        /* Console sub-type */
     data[1] = 0;                        /* Region code */
     data[2] = sms_region >> 4;          /* Video system */
     data[3] = 0;                        /* Reserved */
     fwrite(data, 1, 4, fp);
-    
+
     /* Write each block's state */
     if(coleco_game_write_context(fp)) {
         return -1;
@@ -800,7 +981,7 @@ int coleco_write_state(FILE *fp)
     else if(coleco_mem_write_context(fp)) {
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -809,36 +990,36 @@ int coleco_read_state(FILE *fp)
     char str[19];
     char byte;
     int rv;
-    
-    if(!coleco_initialized) {
+
+    if(!colecovision_cons._base.initialized) {
         /* This shouldn't happen.... */
         return -1;
     }
-    
+
     if(!fp)
         return -1;
-    
+
     fread(str, 18, 1, fp);
     str[18] = 0;
     if(strcmp("CrabEmu Save State", str)) {
         return -2;
     }
-    
+
     /* Read save state version */
     fread(&byte, 1, 1, fp);
     if(byte != 0x00) {
         return -2;
     }
-    
+
     fread(&byte, 1, 1, fp);
-    
+
     if(byte != 0x02) {
         return -2;
     }
-    
+
     rv = coleco_load_state_v2(fp);
-    
+
     sound_reset_buffer();
-    
+
     return rv;
 }

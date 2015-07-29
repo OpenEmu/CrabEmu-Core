@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2012, 2013 Lawrence Sebald
+    Copyright (C) 2012, 2013, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -21,16 +21,15 @@
 #define NES_H
 
 #include "CrabEmu.h"
+#include "console.h"
 
 CLINKAGE
 
-#define CONSOLE_NES     6
-
 extern int nes_init(int video_system);
 extern int nes_reset(void);
-extern void nes_soft_reset(void);
+extern int nes_soft_reset(void);
 extern int nes_shutdown(void);
-extern int nes_frame(int run, int skip);
+extern void nes_frame(int skip);
 
 extern int nes_cycles_elapsed(void);
 extern void nes_assert_irq(void);
@@ -55,6 +54,13 @@ extern void nes_button_released(int player, int button);
 
 extern int nes_save_state(const char *filename);
 extern int nes_load_state(const char *filename);
+
+/* Console definition. */
+typedef struct crabemu_nes {
+    console_t _base;
+} nes_t;
+
+extern nes_t nes_cons;
 
 ENDCLINK
 

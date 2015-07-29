@@ -77,11 +77,12 @@ static uint8 *rom_data = NULL;
 extern Crab6502_t nescpu;
 
 /* Various mappers */
-extern nes_mapper_t nes_mapper_0;
-extern nes_mapper_t nes_mapper_1;
+extern nes_mapper_t nes_mapper_0, nes_mapper_1, nes_mapper_2, nes_mapper_3;
+extern nes_mapper_t nes_mapper_7, nes_mapper_9, nes_mapper_66;
 
 static nes_mapper_t *mappers[] = {
-    &nes_mapper_0, &nes_mapper_1,
+    &nes_mapper_0, &nes_mapper_1, &nes_mapper_2, &nes_mapper_3, &nes_mapper_7,
+    &nes_mapper_9, &nes_mapper_66,
     NULL
 };
 

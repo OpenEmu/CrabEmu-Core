@@ -80,7 +80,6 @@
 		9443D4671715F74100E452AC /* mmc5_snd.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D42B1715F33C00E452AC /* mmc5_snd.c */; };
 		9443D4681715F74F00E452AC /* nes_apu.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D42D1715F33C00E452AC /* nes_apu.c */; };
 		9443D4691715F75700E452AC /* vrcvisnd.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D42F1715F33C00E452AC /* vrcvisnd.c */; };
-		9443D46D1715FFE600E452AC /* list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D46B1715FFE600E452AC /* list.c */; };
 		94BE9E7A171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h in Resources */ = {isa = PBXBuildFile; fileRef = 94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */; };
 		C66DFC1A0F51D82F0080AA28 /* SMSGameCore.m in Sources */ = {isa = PBXBuildFile; fileRef = C66DFC180F51D82F0080AA28 /* SMSGameCore.m */; };
 		C6D120E91711302600E868A8 /* OpenEmuBase.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6D120E71711302600E868A8 /* OpenEmuBase.framework */; };
@@ -127,6 +126,18 @@
 		27E3D4E61B6543D500D8D8B5 /* open_memstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = open_memstream.h; path = fmemopen/open_memstream.h; sourceTree = "<group>"; };
 		3720DB4C0F19510D00744A9A /* CrabEmu.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = CrabEmu.icns; sourceTree = "<group>"; };
 		8291C4E21489595000A72540 /* OEGGSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEGGSystemResponderClient.h; path = ../OpenEmu/GameGear/OEGGSystemResponderClient.h; sourceTree = "<group>"; };
+		878700D11B674AB3006841C9 /* queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = queue.h; path = utils/queue.h; sourceTree = "<group>"; };
+		878700DA1B675E9C006841C9 /* chip8.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = chip8.c; path = chip8/chip8.c; sourceTree = "<group>"; };
+		878700DB1B675E9C006841C9 /* chip8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = chip8.h; path = chip8/chip8.h; sourceTree = "<group>"; };
+		878700DC1B675E9C006841C9 /* chip8cpu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = chip8cpu.c; path = chip8/chip8cpu.c; sourceTree = "<group>"; };
+		878700DD1B675E9C006841C9 /* chip8cpu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = chip8cpu.h; path = chip8/chip8cpu.h; sourceTree = "<group>"; };
+		878700DE1B675E9C006841C9 /* chip8cpuops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = chip8cpuops.h; path = chip8/chip8cpuops.h; sourceTree = "<group>"; };
+		878700DF1B675EB4006841C9 /* nesmapper2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper2.c; sourceTree = "<group>"; };
+		878700E01B675EB4006841C9 /* nesmapper3.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper3.c; sourceTree = "<group>"; };
+		878700E11B675EB4006841C9 /* nesmapper7.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper7.c; sourceTree = "<group>"; };
+		878700E21B675EB4006841C9 /* nesmapper9.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper9.c; sourceTree = "<group>"; };
+		878700E31B675EB4006841C9 /* nesmapper66.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper66.c; sourceTree = "<group>"; };
+		878700E41B675EF0006841C9 /* console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = console.h; sourceTree = "<group>"; };
 		8D5B49B6048680CD000E48DA /* CrabEmu.oecoreplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CrabEmu.oecoreplugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D5B49B7048680CD000E48DA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9443D39B1715F2EB00E452AC /* colecomem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = colecomem.c; sourceTree = "<group>"; };
@@ -178,7 +189,6 @@
 		9443D3CC1715F2EB00E452AC /* smsvdp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = smsvdp.c; sourceTree = "<group>"; };
 		9443D3CD1715F2EB00E452AC /* smsvdp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smsvdp.h; sourceTree = "<group>"; };
 		9443D3CE1715F2EB00E452AC /* smsz80-cz80.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "smsz80-cz80.c"; sourceTree = "<group>"; };
-		9443D3CF1715F2EB00E452AC /* smsz80-debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "smsz80-debug.c"; sourceTree = "<group>"; };
 		9443D3D01715F2EB00E452AC /* smsz80.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = smsz80.c; sourceTree = "<group>"; };
 		9443D3D11715F2EB00E452AC /* smsz80.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smsz80.h; sourceTree = "<group>"; };
 		9443D3D21715F2EB00E452AC /* terebi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = terebi.c; sourceTree = "<group>"; };
@@ -214,8 +224,6 @@
 		9443D4101715F31000E452AC /* cz80exec.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = cz80exec.inc; sourceTree = "<group>"; };
 		9443D4111715F31000E452AC /* cz80jmp.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = cz80jmp.inc; sourceTree = "<group>"; };
 		9443D4121715F31000E452AC /* readme.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = readme.txt; sourceTree = "<group>"; };
-		9443D4141715F31000E452AC /* z80.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = z80.c; sourceTree = "<group>"; };
-		9443D4151715F31000E452AC /* z80.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = z80.h; sourceTree = "<group>"; };
 		9443D4261715F33C00E452AC /* sound.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sound.c; sourceTree = "<group>"; };
 		9443D4281715F33C00E452AC /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = COPYING; sourceTree = "<group>"; };
 		9443D4291715F33C00E452AC /* fds_snd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fds_snd.c; sourceTree = "<group>"; };
@@ -235,8 +243,6 @@
 		9443D4371715F33C00E452AC /* ym2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ym2413.h; sourceTree = "<group>"; };
 		9443D45B1715F67D00E452AC /* rom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rom.c; sourceTree = "<group>"; };
 		9443D45C1715F67D00E452AC /* rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rom.h; sourceTree = "<group>"; };
-		9443D46B1715FFE600E452AC /* list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = list.c; path = utils/list.c; sourceTree = "<group>"; };
-		9443D46C1715FFE600E452AC /* list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = list.h; path = utils/list.h; sourceTree = "<group>"; };
 		946C18AF171491B300C64BF9 /* OESG1000SystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESG1000SystemResponderClient.h; path = "../OpenEmu/SG-1000/OESG1000SystemResponderClient.h"; sourceTree = "<group>"; };
 		94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEColecoVisionSystemResponderClient.h; path = ../OpenEmu/ColecoVision/OEColecoVisionSystemResponderClient.h; sourceTree = "<group>"; };
 		B5DA7D8C0F5B28940008F047 /* CrabEmu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CrabEmu.h; sourceTree = "<group>"; };
@@ -348,6 +354,7 @@
 			isa = PBXGroup;
 			children = (
 				27E3D4E11B65439900D8D8B5 /* fmemopen */,
+				878700E41B675EF0006841C9 /* console.h */,
 				B5DA7D8C0F5B28940008F047 /* CrabEmu.h */,
 				9443D45B1715F67D00E452AC /* rom.c */,
 				9443D45C1715F67D00E452AC /* rom.h */,
@@ -357,6 +364,18 @@
 				9443D46A1715FFA200E452AC /* utils */,
 			);
 			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		878700D21B675E74006841C9 /* chip8 */ = {
+			isa = PBXGroup;
+			children = (
+				878700DA1B675E9C006841C9 /* chip8.c */,
+				878700DB1B675E9C006841C9 /* chip8.h */,
+				878700DC1B675E9C006841C9 /* chip8cpu.c */,
+				878700DD1B675E9C006841C9 /* chip8cpu.h */,
+				878700DE1B675E9C006841C9 /* chip8cpuops.h */,
+			);
+			name = chip8;
 			sourceTree = "<group>";
 		};
 		9443D39A1715F2EB00E452AC /* colecovision */ = {
@@ -390,6 +409,11 @@
 			children = (
 				9443D3A11715F2EB00E452AC /* nesmapper0.c */,
 				9443D3A21715F2EB00E452AC /* nesmapper1.c */,
+				878700DF1B675EB4006841C9 /* nesmapper2.c */,
+				878700E01B675EB4006841C9 /* nesmapper3.c */,
+				878700E11B675EB4006841C9 /* nesmapper7.c */,
+				878700E21B675EB4006841C9 /* nesmapper9.c */,
+				878700E31B675EB4006841C9 /* nesmapper66.c */,
 			);
 			path = mappers;
 			sourceTree = "<group>";
@@ -433,7 +457,6 @@
 				9443D3CC1715F2EB00E452AC /* smsvdp.c */,
 				9443D3CD1715F2EB00E452AC /* smsvdp.h */,
 				9443D3CE1715F2EB00E452AC /* smsz80-cz80.c */,
-				9443D3CF1715F2EB00E452AC /* smsz80-debug.c */,
 				9443D3D01715F2EB00E452AC /* smsz80.c */,
 				9443D3D11715F2EB00E452AC /* smsz80.h */,
 				9443D3D21715F2EB00E452AC /* terebi.c */,
@@ -494,15 +517,6 @@
 			path = cz80;
 			sourceTree = "<group>";
 		};
-		9443D4131715F31000E452AC /* mamez80 */ = {
-			isa = PBXGroup;
-			children = (
-				9443D4141715F31000E452AC /* z80.c */,
-				9443D4151715F31000E452AC /* z80.h */,
-			);
-			path = mamez80;
-			sourceTree = "<group>";
-		};
 		9443D4251715F33C00E452AC /* coreaudio */ = {
 			isa = PBXGroup;
 			children = (
@@ -530,8 +544,7 @@
 		9443D46A1715FFA200E452AC /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				9443D46B1715FFE600E452AC /* list.c */,
-				9443D46C1715FFE600E452AC /* list.h */,
+				878700D11B674AB3006841C9 /* queue.h */,
 			);
 			name = utils;
 			sourceTree = "<group>";
@@ -539,6 +552,7 @@
 		B50C176B0E936FD500A8FA7E /* consoles */ = {
 			isa = PBXGroup;
 			children = (
+				878700D21B675E74006841C9 /* chip8 */,
 				9443D39A1715F2EB00E452AC /* colecovision */,
 				9443D39F1715F2EB00E452AC /* nes */,
 				9443D3AA1715F2EB00E452AC /* sms */,
@@ -552,7 +566,6 @@
 				9443D3F31715F31000E452AC /* Crab6502 */,
 				9443D3FB1715F31000E452AC /* CrabZ80 */,
 				9443D4071715F31000E452AC /* cz80 */,
-				9443D4131715F31000E452AC /* mamez80 */,
 			);
 			path = cpu;
 			sourceTree = "<group>";
@@ -711,7 +724,6 @@
 				9443D4681715F74F00E452AC /* nes_apu.c in Sources */,
 				9443D4691715F75700E452AC /* vrcvisnd.c in Sources */,
 				9443D4601715F6EB00E452AC /* nesapu-nosefart.c in Sources */,
-				9443D46D1715FFE600E452AC /* list.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

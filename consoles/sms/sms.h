@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2007, 2009, 2012 Lawrence Sebald
+    Copyright (C) 2005, 2007, 2009, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -21,22 +21,22 @@
 #define SMS_H
 
 #include "CrabEmu.h"
+#include "console.h"
 
 CLINKAGE
 
 #include <stdio.h>
 
-extern int sms_init(int video_system, int region);
+extern int sms_init(int video_system, int region, int borders);
 extern int sms_reset(void);
-extern void sms_soft_reset(void);
+extern int sms_soft_reset(void);
 extern int sms_shutdown(void);
-
-extern int sms_frame(int run, int skip);
 
 extern void sms_button_pressed(int player, int button);
 extern void sms_button_released(int player, int button);
 
 extern void sms_set_console(int console);
+extern int sms_cycles_elapsed(void);
 
 extern int sms_psg_write_context(FILE *fp);
 extern int sms_psg_read_context(const uint8 *buf);
@@ -75,6 +75,16 @@ extern int sms_read_state(FILE *fp);
 #define SMS_QUIT            7   /* This one is ignored... */
 #define SMS_CONSOLE_RESET   8
 
+/* Buttons for the Graphic Board */
+#define SMS_GFXBD_1         0
+#define SMS_GFXBD_2         1
+#define SMS_GFXBD_3         2
+
+/* Control pad types. */
+#define SMS_PADTYPE_NONE        0
+#define SMS_PADTYPE_CONTROL_PAD 1
+#define SMS_PADTYPE_GFX_BOARD   2
+
 #define SMS_PAD1_TL     SMS_PAD1_A
 #define SMS_PAD1_TR     SMS_PAD1_B
 #define SMS_PAD2_TL     SMS_PAD2_A
@@ -83,12 +93,6 @@ extern int sms_read_state(FILE *fp);
 #define SMS_PAD2_TH     0x8000
 
 #define SMS_TH_MASK     0xC000
-
-/* Console types */
-#define CONSOLE_SMS    1
-#define CONSOLE_GG     2
-#define CONSOLE_SG1000 3
-#define CONSOLE_SC3000 4
 
 /* Region types */
 #define SMS_REGION_DOMESTIC 0x01
@@ -99,6 +103,13 @@ extern int sms_read_state(FILE *fp);
 #define SMS_VIDEO_PAL  VIDEO_PAL
 
 #define SMS_CYCLES_PER_LINE 228
+
+/* Console definition. */
+typedef struct crabemu_sms {
+    console_t _base;
+} sms_t;
+
+extern sms_t sms_cons;
 
 ENDCLINK
 

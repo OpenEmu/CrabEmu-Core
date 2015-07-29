@@ -1,10 +1,10 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009, 2012 Lawrence Sebald
+    Copyright (C) 2015 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -17,25 +17,24 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef MAPPER_SEGA_H
-#define MAPPER_SEGA_H
+#ifndef CHIP8_H
+#define CHIP8_H
 
 #include "CrabEmu.h"
+#include "console.h"
 
 CLINKAGE
 
-#include <stdio.h>
+extern int chip8_init(void);
+extern int chip8_mem_load_rom(const char *fn);
 
-extern uint8 sms_mem_sega_mread(uint16 addr);
-extern void sms_mem_sega_mwrite(uint16 addr, uint8 data);
+/* Console definition. */
+typedef struct crabemu_chip8 {
+    console_t _base;
+} chip8_t;
 
-extern uint16 sms_mem_sega_mread16(uint16 addr);
-extern void sms_mem_sega_mwrite16(uint16 addr, uint16 data);
-
-extern int sms_mem_sega_write_context(FILE *fp);
-extern int sms_mem_sega_read_context(const uint8 *buf);
-extern int sms_mem_sega_read_mem(const uint8 *buf);
+extern chip8_t chip8_cons;
 
 ENDCLINK
 
-#endif /* !MAPPER_SEGA_H */
+#endif /* !CHIP8_H */

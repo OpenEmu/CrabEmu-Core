@@ -96,10 +96,20 @@ void sms_gg_port_write(uint16 port, uint8 data) {
     port &= 0xFF;
 
     if(port < 0x07) {
-        sms_gg_regs[port] = data;
+        switch(port) {
+            case 1:
+            case 2:
+            case 3:
+                sms_gg_regs[port] = data;
+                break;
 
-        if(port == 0x06) {
-            sn76489_set_output_channels(&psg, data);
+            case 5:
+                sms_gg_regs[5] = data & 0xF8;
+                break;
+
+            case 6:
+                sn76489_set_output_channels(&psg, data);
+                break;
         }
     }
     else if(port < 0x40) {
@@ -144,7 +154,25 @@ uint8 sms_gg_port_read(uint16 port) {
     port &= 0xFF;
 
     if(port < 0x07) {
-        return sms_gg_regs[port];
+        switch(port) {
+            case 0:
+                return sms_gg_regs[0] & 0xE0;
+
+            case 1:
+                return 0;
+
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                return sms_gg_regs[port];
+
+            case 6:
+                return 0xFF;
+
+            default:
+                return 0xFF;
+        }
     }
     else if(port < 0x40) {
         return 0xFF;

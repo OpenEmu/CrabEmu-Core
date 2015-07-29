@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2009, 2012 Lawrence Sebald
+    Copyright (C) 2009, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -20,7 +20,7 @@
 #ifndef CRABEMU_H
 #define CRABEMU_H
 
-#define VERSION "0.2.0"
+#define VERSION "0.2.1"
 
 #ifdef __cplusplus
 #define CLINKAGE extern "C" {
@@ -35,6 +35,7 @@
 
 #ifdef _arch_dreamcast
 #include <arch/types.h>
+#include <stdint.h>
 #else
 #include <stdint.h>
 typedef uint8_t uint8;
@@ -127,6 +128,11 @@ typedef uint16 pixel_t;
 CLINKAGE
 extern void gui_set_aspect(float x, float y);
 extern void gui_set_title(const char *str);
+
+/* Forward declaration... */
+struct crabemu_console;
+
+extern void gui_set_console(struct crabemu_console *c);
 ENDCLINK
 
 #endif /* !CRABEMU_H */
