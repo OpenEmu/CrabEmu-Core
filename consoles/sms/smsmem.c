@@ -2,7 +2,7 @@
     This file is part of CrabEmu.
 
     Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-                  2014 Lawrence Sebald
+                  2014, 2015 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -401,7 +401,7 @@ static void setup_mapper() {
     int codemasters, sega, korean, korean_msx;
     uint8 *ptr;
 
-    if(sms_cart_len < 0x8000) {
+    if(sms_cart_len <= 0x8000) {
         /* The cartridge contains less than 32KB of data, so there probably
            isn't even a mapper in it, but just to be safe, in case it has
            SRAM for some reason, we'll just assume the Sega Mapper. */
@@ -427,7 +427,7 @@ static void setup_mapper() {
                 ++codemasters;
             else if(value == 0xA000)
                 ++korean;
-            else if(value < 0x0004)
+            else if(value == 0x0002 || value == 0x0003 || value == 0x0004)
                 ++korean_msx;
         }
     }
