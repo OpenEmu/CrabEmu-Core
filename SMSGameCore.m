@@ -105,7 +105,44 @@ console_t *cur_console;
     }
     else
     {
-        sms_init(SMS_VIDEO_NTSC, [[self systemRegion] isEqualToString: @"Japan"] ? SMS_REGION_DOMESTIC : SMS_REGION_EXPORT, 0); // 1 = VDP borders
+        NSData *dataObj = [NSData dataWithContentsOfFile:[path stringByStandardizingPath]];
+        const void *data = [dataObj bytes];
+        uint16_t offset = 0;
+        int region = SMS_REGION_DOMESTIC;
+
+        // Detect SMS ROM header
+        if(memcmp(&data[0x1ff0], "TMR SEGA", 8) == 0)
+            offset = 0x1ff0;
+        else if (memcmp(&data[0x3ff0], "TMR SEGA", 8) == 0)
+            offset = 0x3ff0;
+        else if (memcmp(&data[0x7ff0], "TMR SEGA", 8) == 0)
+            offset = 0x7ff0;
+
+        if(offset)
+        {
+            // Set machine region
+            switch (((char *)data)[offset + 0x0f] >> 4)
+            {
+                case 3: // SMS Japan
+                    region = SMS_REGION_DOMESTIC;
+                    break;
+                case 4: // SMS Export
+                    // Force system region to Japan if user locale is Japan and the cart is world/multi-region
+                    region = [[self systemRegion] isEqualToString: @"Japan"] ? SMS_REGION_DOMESTIC : SMS_REGION_EXPORT;
+                    break;
+                case 5: // GG Japan
+                case 6: // GG Export
+                case 7: // GG International
+                default:
+                    region = SMS_REGION_DOMESTIC;
+                    break;
+            }
+        }
+        else
+            // No header means Japan region
+            region = SMS_REGION_DOMESTIC;
+
+        sms_init(SMS_VIDEO_NTSC, region, 0); // 1 = VDP borders
         sms_mem_load_rom([path UTF8String], console);
         cur_console->frame(0);
     }
