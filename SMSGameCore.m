@@ -206,7 +206,7 @@ console_t *cur_console;
 
 - (OEIntSize)aspectSize
 {
-    return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 4, cur_console->console_type == CONSOLE_GG ? 144 : 3);
+    return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 256 * (8.0/7.0), cur_console->console_type == CONSOLE_GG ? 144 : 192);
 }
 
 - (const void *)videoBuffer
