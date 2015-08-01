@@ -750,12 +750,16 @@ uint8 sms_port_read(uint16 port) {
         }
     }
     else {
-        if(!(sms_memctl & SMS_MEMCTL_IO)) {
-            return sms_read_controls(port);
-        }
-        else if(sms_ym2413_enabled && port == 0xF2) {
+        /* Uguu~~ Some games apparently don't disable the I/O chip properly when
+           trying to detect the FM unit... In theory this would potentially give
+           some fun interference on the bus and allow for false positives, but
+           whatever. */
+        if(sms_ym2413_enabled && port == 0xF2) {
             sms_ym2413_in_use = 1;
             return sms_fm_detect;
+        }
+        else if(!(sms_memctl & SMS_MEMCTL_IO)) {
+            return sms_read_controls(port);
         }
         else {
             return 0xFF;
@@ -1064,6 +1068,10 @@ static void finalize_load(const char *fn) {
             }
         }
     }
+
+#ifdef DEBUG
+    printf("Detected Mapper %d\n", mapper);
+#endif
 
     if((sms_cons._base.console_type == CONSOLE_SG1000 ||
         sms_cons._base.console_type == CONSOLE_SC3000) &&
@@ -2125,18 +2133,18 @@ int sms_mem_init(void) {
     sms_ioctl_output_mask = 0x0000;
     sms_ioctl_output_bits = 0x0000;
 
-    sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_CART | SMS_MEMCTL_RAM) ^ 0xFF;
+    sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_CART | SMS_MEMCTL_RAM) ^ 0xFC;
     sms_ioctl = SMS_IOCTL_TR_A_DIRECTION | SMS_IOCTL_TH_A_DIRECTION |
                 SMS_IOCTL_TR_B_DIRECTION | SMS_IOCTL_TH_B_DIRECTION;
-
-    /* Set the memctl value at address 0xC000 of the SMS' memory. */
-    ram[0] = sms_memctl;
-    sms_bios_active = 0;
 
     gfx_board_nibble[0] = gfx_board_nibble[1] = 0;
     sms_gfxbd_data[0] = sms_gfxbd_data[1] = 0x0000000F;
 
     memset(ram, 0xF0, 8 * 1024);
+
+    /* Set the memctl value at address 0xC000 of the SMS' memory. */
+    ram[0] = sms_memctl;
+    sms_bios_active = 0;
 
     return 0;
 }
@@ -2179,7 +2187,7 @@ void sms_mem_reset(void) {
         sms_mem_remap_page[1] = &remap_page0_sms_bios;
         sms_mem_remap_page[2] = &remap_page1_sms_bios;
         sms_mem_remap_page[3] = &remap_page2_sms_bios;
-        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_BIOS | SMS_MEMCTL_RAM) ^ 0xFF;
+        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_BIOS | SMS_MEMCTL_RAM) ^ 0xFC;
         sms_bios_active = 1;
     }
     else if(sms_cons._base.console_type == CONSOLE_GG && gg_bios_rom != NULL) {
@@ -2187,16 +2195,13 @@ void sms_mem_reset(void) {
         sms_mem_remap_page[1] = &sms_mem_remap_page0_gg_bios;
         sms_mem_remap_page[2] = &remap_page1;
         sms_mem_remap_page[3] = &remap_page2;
-        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_BIOS | SMS_MEMCTL_RAM) ^ 0xFF;
+        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_BIOS | SMS_MEMCTL_RAM) ^ 0xFC;
         sms_bios_active = 1;
     }
     else {
-        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_CART | SMS_MEMCTL_RAM) ^ 0xFF;
+        sms_memctl = (SMS_MEMCTL_IO | SMS_MEMCTL_CART | SMS_MEMCTL_RAM) ^ 0xFC;
         sms_bios_active = 0;
     }
-
-    /* Set the memctl value at address 0xC000 in the SMS' memory. */
-    ram[0] = sms_memctl;
 
     sms_ioctl_input_mask = 0xFFFF;
     sms_ioctl_output_mask = 0x0000;
@@ -2208,6 +2213,9 @@ void sms_mem_reset(void) {
     sms_gfxbd_data[0] = sms_gfxbd_data[1] = 0x0000000F;
 
     memset(ram, 0xF0, 8 * 1024);
+
+    /* Set the memctl value at address 0xC000 in the SMS' memory. */
+    ram[0] = sms_memctl;
 
     reorganize_pages();
     sms_mem_janggun_reset();
