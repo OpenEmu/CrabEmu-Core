@@ -39,6 +39,11 @@
 		27E3D4E41B6543BC00D8D8B5 /* fmemopen.c in Sources */ = {isa = PBXBuildFile; fileRef = 27E3D4E21B6543BC00D8D8B5 /* fmemopen.c */; };
 		27E3D4E71B6543D500D8D8B5 /* open_memstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 27E3D4E51B6543D500D8D8B5 /* open_memstream.c */; };
 		3720DB4D0F19510D00744A9A /* CrabEmu.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3720DB4C0F19510D00744A9A /* CrabEmu.icns */; };
+		834A0CAC1B79371A0073803A /* nesmapper2.c in Sources */ = {isa = PBXBuildFile; fileRef = 878700DF1B675EB4006841C9 /* nesmapper2.c */; };
+		834A0CAD1B79371A0073803A /* nesmapper3.c in Sources */ = {isa = PBXBuildFile; fileRef = 878700E01B675EB4006841C9 /* nesmapper3.c */; };
+		834A0CAE1B79371A0073803A /* nesmapper7.c in Sources */ = {isa = PBXBuildFile; fileRef = 878700E11B675EB4006841C9 /* nesmapper7.c */; };
+		834A0CAF1B79371A0073803A /* nesmapper9.c in Sources */ = {isa = PBXBuildFile; fileRef = 878700E21B675EB4006841C9 /* nesmapper9.c */; };
+		834A0CB01B79371A0073803A /* nesmapper66.c in Sources */ = {isa = PBXBuildFile; fileRef = 878700E31B675EB4006841C9 /* nesmapper66.c */; };
 		8D5B49B0048680CD000E48DA /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C167DFE841241C02AAC07 /* InfoPlist.strings */; };
 		8D5B49B4048680CD000E48DA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7ADFEA557BF11CA2CBB /* Cocoa.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		9443D4411715F42200E452AC /* CrabZ80.c in Sources */ = {isa = PBXBuildFile; fileRef = 9443D3FC1715F31000E452AC /* CrabZ80.c */; };
@@ -682,6 +687,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				834A0CAC1B79371A0073803A /* nesmapper2.c in Sources */,
+				834A0CAD1B79371A0073803A /* nesmapper3.c in Sources */,
+				834A0CAE1B79371A0073803A /* nesmapper7.c in Sources */,
+				834A0CAF1B79371A0073803A /* nesmapper9.c in Sources */,
+				834A0CB01B79371A0073803A /* nesmapper66.c in Sources */,
 				C66DFC1A0F51D82F0080AA28 /* SMSGameCore.m in Sources */,
 				9443D4411715F42200E452AC /* CrabZ80.c in Sources */,
 				9443D4421715F42500E452AC /* CrabZ80d.c in Sources */,
