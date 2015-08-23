@@ -40,7 +40,7 @@ typedef struct srom_s {
     uint32 mapper;
 } special_rom_t;
 
-static const int rom_count = 26;
+static const int rom_count = 27;
 static special_rom_t romlist[] = {
     { 0xBF3A0EDC, 0x092F29D6, SMS_MAPPER_CASTLE }, /* The Castle - SG-1000 */
     { 0x86429577, 0x4ED45BDA, SMS_MAPPER_93C46 }, /* Nomo's World Series Baseball */
@@ -68,6 +68,7 @@ static special_rom_t romlist[] = {
     { 0x9CABE756, 0xAAAC12CF, SMS_MAPPER_TW_MSX_TYPE_B }, /* Rally-X */
     { 0x7C5AC4A0, 0xD2EDD329, SMS_MAPPER_TW_MSX_TYPE_B }, /* Road Fighter */
     { 0x6E11F0D2, 0x72542786, SMS_MAPPER_NONE }, /* Monaco GP */
+    { 0x1282E24F, 0x704F6A61, SMS_MAPPER_NONE }, /* Lander 2 (homebrew) */
 };
 
 uint32 sms_find_mapper(const uint8 *rom, uint32 len, uint32 *rcrc,
