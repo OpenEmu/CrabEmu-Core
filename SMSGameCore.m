@@ -250,14 +250,14 @@ console_t *cur_console;
 
 # pragma mark - Save States
 
-- (BOOL)saveStateToFileAtPath:(NSString *)fileName
+- (void)saveStateToFileAtPath:(NSString *)fileName completionHandler:(void (^)(BOOL, NSError *))block
 {
-    return cur_console->save_state([fileName fileSystemRepresentation]) == 0;
+    block(cur_console->save_state([fileName fileSystemRepresentation]) == 0, nil);
 }
 
-- (BOOL)loadStateFromFileAtPath:(NSString *)fileName
+- (void)loadStateFromFileAtPath:(NSString *)fileName completionHandler:(void (^)(BOOL, NSError *))block
 {
-    return cur_console->load_state([fileName fileSystemRepresentation]) == 0;
+    block(cur_console->load_state([fileName fileSystemRepresentation]) == 0, nil);
 }
 
 - (NSData *)serializeStateWithError:(NSError **)outError
@@ -267,31 +267,26 @@ console_t *cur_console;
     FILE *fp = open_memstream((char **)&bytes, &length);
 
     int status;
-    if(cur_console->console_type == CONSOLE_COLECOVISION) {
+    if(cur_console->console_type == CONSOLE_COLECOVISION)
         status = coleco_write_state(fp);
-    }
-    else {
+    else
         status = sms_write_state(fp);
-    }
 
     if(status == 0) {
         fclose(fp);
         return [NSData dataWithBytesNoCopy:bytes length:length];
     }
-    else {
-        if(outError) {
-            *outError = [NSError errorWithDomain:OEGameCoreErrorDomain
-                                            code:OEGameCoreCouldNotSaveStateError
-                                        userInfo:@{
-                                                   NSLocalizedDescriptionKey : @"Save state data could not be written",
-                                                   NSLocalizedRecoverySuggestionErrorKey : @"The emulator could not write the state data."
-                                                   }];
-        }
 
-        fclose(fp);
-        free(bytes);
-        return nil;
+    if(outError) {
+        *outError = [NSError errorWithDomain:OEGameCoreErrorDomain code:OEGameCoreCouldNotSaveStateError userInfo:@{
+            NSLocalizedDescriptionKey : @"Save state data could not be written",
+            NSLocalizedRecoverySuggestionErrorKey : @"The emulator could not write the state data."
+        }];
     }
+
+    fclose(fp);
+    free(bytes);
+    return nil;
 }
 
 - (BOOL)deserializeState:(NSData *)state withError:(NSError **)outError
@@ -302,32 +297,24 @@ console_t *cur_console;
     FILE *fp = fmemopen((void *)bytes, length, "rb");
 
     int status;
-    if(cur_console->console_type == CONSOLE_COLECOVISION) {
+    if(cur_console->console_type == CONSOLE_COLECOVISION)
         status = coleco_read_state(fp);
-    }
-    else {
+    else
         status = sms_read_state(fp);
-    }
+
     fclose(fp);
 
     if(status == 0)
-    {
         return YES;
-    }
-    else
-    {
-        if(outError)
-        {
-            *outError = [NSError errorWithDomain:OEGameCoreErrorDomain
-                                            code:OEGameCoreCouldNotLoadStateError
-                                        userInfo:@{
-                                                   NSLocalizedDescriptionKey : @"The save state data could not be read",
-                                                   NSLocalizedRecoverySuggestionErrorKey : @"Could not load data from the save state"
-                                                   }];
-        }
 
-        return NO;
+    if(outError) {
+        *outError = [NSError errorWithDomain:OEGameCoreErrorDomain code:OEGameCoreCouldNotLoadStateError userInfo:@{
+            NSLocalizedDescriptionKey : @"The save state data could not be read",
+            NSLocalizedRecoverySuggestionErrorKey : @"Could not load data from the save state"
+        }];
     }
+
+    return NO;
 }
 
 /*
