@@ -257,7 +257,13 @@ console_t *cur_console;
 
 - (void)loadStateFromFileAtPath:(NSString *)fileName completionHandler:(void (^)(BOOL, NSError *))block
 {
-    block(cur_console->load_state([fileName fileSystemRepresentation]) == 0, nil);
+    if([[self systemIdentifier] isEqualToString:@"openemu.system.sg1000"])
+    {
+        cur_console->load_state([fileName fileSystemRepresentation]);
+        block(YES, nil);
+    }
+    else
+        block(cur_console->load_state([fileName fileSystemRepresentation]) == 0, nil);
 }
 
 - (NSData *)serializeStateWithError:(NSError **)outError
