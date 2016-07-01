@@ -143,6 +143,9 @@
 		878700E21B675EB4006841C9 /* nesmapper9.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper9.c; sourceTree = "<group>"; };
 		878700E31B675EB4006841C9 /* nesmapper66.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nesmapper66.c; sourceTree = "<group>"; };
 		878700E41B675EF0006841C9 /* console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = console.h; sourceTree = "<group>"; };
+		87ACB6E41D26C1F600138B7E /* CrabZ80_gbmacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrabZ80_gbmacros.h; sourceTree = "<group>"; };
+		87ACB6E51D26C1F600138B7E /* CrabZ80gbops.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrabZ80gbops.h; sourceTree = "<group>"; };
+		87ACB6E61D26C1F700138B7E /* CrabZ80gbopsCB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrabZ80gbopsCB.h; sourceTree = "<group>"; };
 		8D5B49B6048680CD000E48DA /* CrabEmu.oecoreplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CrabEmu.oecoreplugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D5B49B7048680CD000E48DA /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9443D39B1715F2EB00E452AC /* colecomem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = colecomem.c; sourceTree = "<group>"; };
@@ -495,6 +498,9 @@
 				9443D3FF1715F31000E452AC /* CrabZ80_tables.h */,
 				9443D4001715F31000E452AC /* CrabZ80d.c */,
 				9443D4011715F31000E452AC /* CrabZ80d.h */,
+				87ACB6E41D26C1F600138B7E /* CrabZ80_gbmacros.h */,
+				87ACB6E51D26C1F600138B7E /* CrabZ80gbops.h */,
+				87ACB6E61D26C1F700138B7E /* CrabZ80gbopsCB.h */,
 				9443D4021715F31000E452AC /* CrabZ80ops.h */,
 				9443D4031715F31000E452AC /* CrabZ80opsCB.h */,
 				9443D4041715F31000E452AC /* CrabZ80opsDD-FD.h */,

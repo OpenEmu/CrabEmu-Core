@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2014, 2015 Lawrence Sebald
+    Copyright (C) 2014, 2015, 2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2
@@ -35,6 +35,12 @@ CLINKAGE
 #define CONSOLE_NES             6   /* Nintendo Entertainment System */
                                     /* 7 left blank for now... */
 #define CONSOLE_CHIP8           8   /* Chip-8 "Console" */
+
+/* Region codes. */
+#define REGION_NONE             0x00
+#define REGION_JAPAN            0x01
+#define REGION_US               0x02
+#define REGION_EUROPE           0x04
 
 /* This structure is meant to provide an abstraction of a console, such that
    there can be less console-specific code up at the GUI level. Rignt now, this

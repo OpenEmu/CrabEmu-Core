@@ -4,7 +4,7 @@
     Copyright (C) 2005, 2006, 2007, 2008, 2009 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -34,7 +34,7 @@ int sms_z80_init(void) {
         return -1;
     }
 
-    CrabZ80_init(cpuz80);
+    CrabZ80_init(cpuz80, CRABZ80_CPU_Z80);
     CrabZ80_reset(cpuz80);
 
     CrabZ80_set_portwrite(cpuz80, sms_port_write);

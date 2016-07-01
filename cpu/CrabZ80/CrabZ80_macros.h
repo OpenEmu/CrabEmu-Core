@@ -4,7 +4,7 @@
     Copyright (C) 2005, 2006, 2007, 2008 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -350,7 +350,7 @@
 
 #define OP_ADDIx() {   \
     uint32 _tmp = cpu->offset->w + _value; \
-        cpu->af.b.l = (cpu->af.b.l & 0xC4) | \
+    cpu->af.b.l = (cpu->af.b.l & 0xC4) | \
         (((cpu->offset->w ^ _tmp ^ _value) >> 8) & 0x10) | \
         ((_tmp >> 8) & 0x28) | \
         ((_tmp >> 16) & 0x01); \

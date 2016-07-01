@@ -4,7 +4,7 @@
     Copyright (C) 2005, 2007, 2009, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -95,8 +95,8 @@ extern int sms_read_state(FILE *fp);
 #define SMS_TH_MASK     0xC000
 
 /* Region types */
-#define SMS_REGION_DOMESTIC 0x01
-#define SMS_REGION_EXPORT   0x02
+#define SMS_REGION_DOMESTIC REGION_JAPAN
+#define SMS_REGION_EXPORT   REGION_US
 
 /* Video Standards */
 #define SMS_VIDEO_NTSC VIDEO_NTSC

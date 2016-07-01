@@ -4,7 +4,7 @@
     Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2014 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 2 
+    it under the terms of the GNU General Public License version 2
     as published by the Free Software Foundation.
 
     CrabEmu is distributed in the hope that it will be useful,
@@ -103,18 +103,18 @@ colecovision_t colecovision_cons = {
         &tms9918a_vdp_activeframe,
         NULL,                       /* save_cheats */
 #ifndef _arch_dreamcast
-		&coleco_scanline,
-		&coleco_single_step,
-		&coleco_finish_frame,
-		&coleco_finish_scanline,
+        &coleco_scanline,
+        &coleco_single_step,
+        &coleco_finish_frame,
+        &coleco_finish_scanline,
 #else
         NULL,
         NULL,
         NULL,
         NULL,
 #endif
-		&coleco_current_scanline,
-		&coleco_cycles_left,
+        &coleco_current_scanline,
+        &coleco_cycles_left,
         NULL                        /* set_control */
     }
 };
@@ -148,7 +148,7 @@ int coleco_init(int video_system) {
 
         for(i = 0; i < PAL_LINES_PER_FRAME; ++i) {
             psg_samples[i] = (uint32) (tmp * (i + 1)) -
-                             (uint32) (tmp * i);            
+                             (uint32) (tmp * i);
         }
 
         /* We need 882 samples per frame @ 44100 Hz, 50fps. */
@@ -308,7 +308,7 @@ void coleco_button_released(int player, int button) {
 }
 
 #ifndef _arch_dreamcast
-static __INLINE__ int update_sound(int16 buf[], int start, int line) {    
+static __INLINE__ int update_sound(int16 buf[], int start, int line) {
     if(sms_psg_enabled)
         sn76489_execute_samples(&psg, buf + start, psg_samples[line]);
     else
