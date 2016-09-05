@@ -2,7 +2,7 @@
     This file is part of CrabEmu.
 
     Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-                  2014, 2015 Lawrence Sebald
+                  2014, 2015, 2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -66,6 +66,9 @@ static uint32 cart_len = 0;
 static uint8 cont_mode = 0;
 static uint32 rom_crc, rom_adler;
 
+static uint32 megacart_page = 0;
+static uint32 megacart_pages = 0;
+
 extern sn76489_t psg;
 
 uint16 coleco_cont_bits[2];
@@ -117,16 +120,53 @@ void coleco_port_write(uint16 port, uint8 data) {
 }
 
 uint8 coleco_mem_read(uint16 addr) {
+    if(megacart_pages && addr > 0xFFC0) {
+        int i;
+
+        megacart_page = (addr & (megacart_pages - 1));
+
+        /* Fix the paging... */
+        for(i = 0; i < 0x40; ++i) {
+            read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
+            sms_z80_set_readmap(read_map);
+        }
+    }
+
     return read_map[addr >> 8][addr & 0xFF];
 }
 
 void coleco_mem_write(uint16 addr, uint8 data) {
+    if(megacart_pages && addr > 0xFFC0) {
+        int i;
+
+        megacart_page = (addr & (megacart_pages - 1));
+
+        /* Fix the paging... */
+        for(i = 0; i < 0x40; ++i) {
+            read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
+            sms_z80_set_readmap(read_map);
+        }
+    }
+
     write_map[addr >> 8][addr & 0xFF] = data;
 }
 
 uint16 coleco_mem_read16(uint16 addr) {
     uint16 rv = (uint16)read_map[addr >> 8][addr & 0xFF];
     ++addr;
+
+    /* Nobody'd be stupid enough to do this, would they?... */
+    if(megacart_pages && addr > 0xFFC0) {
+        int i;
+
+        megacart_page = (addr & (megacart_pages - 1));
+
+        /* Fix the paging... */
+        for(i = 0; i < 0x40; ++i) {
+            read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
+            sms_z80_set_readmap(read_map);
+        }
+    }
 
     rv |= ((uint16)read_map[addr >> 8][addr & 0xFF]) << 8;
     return rv;
@@ -135,6 +175,21 @@ uint16 coleco_mem_read16(uint16 addr) {
 void coleco_mem_write16(uint16 addr, uint16 data) {
     write_map[addr >> 8][addr & 0xFF] = (uint8)data;
     ++addr;
+
+    /* Hopefully if nobody's stupid enough to trigger the one above, there
+       really won't be anyone triggering THIS one... */
+    if(megacart_pages && addr > 0xFFC0) {
+        int i;
+
+        megacart_page = (addr & (megacart_pages - 1));
+
+        /* Fix the paging... */
+        for(i = 0; i < 0x40; ++i) {
+            read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
+            sms_z80_set_readmap(read_map);
+        }
+    }
+
     write_map[addr >> 8][addr & 0xFF] = (uint8)(data >> 8);
 }
 
@@ -169,13 +224,38 @@ static void finalize_load(const char *fn) {
     }
 
     /* ROM */
-    for(i = 0; i < 0x80; ++i) {
-        write_map[i + 0x80] = dummy_areaw;
+    if(cart_len > 0x8000) {
+        /* We have a MegaCart... */
+        megacart_page = 0;
+        megacart_pages = cart_len >> 14;
 
-        if(i < (cart_len >> 8))
-            read_map[i + 0x80] = cart_rom + (i << 8);
-        else
-            read_map[i + 0x80] = dummy_arear;
+#ifdef DEBUG
+        fprintf(stderr, "coleco_mem_load_rom: Detected MegaCart\n"
+                "    %" PRIu32 " bytes long = %" PRIu32 " pages\n",
+                cart_len, megacart_pages);
+#endif
+
+        /* Always map 0x8000-0xBFFF to the top 16k of the cart... The page
+           selected for 0xC000-0xFFFF starts out as page 0. */
+        for(i = 0; i < 0x40; ++i) {
+            write_map[i + 0x80] = dummy_areaw;
+            write_map[i + 0xC0] = dummy_areaw;
+            read_map[i + 0x80] = cart_rom + (cart_len - 0x4000) + (i << 8);
+            read_map[i + 0xC0] = cart_rom + (i << 8);
+        }
+
+    }
+    else {
+        megacart_pages = megacart_page = 0;
+
+        for(i = 0; i < 0x80; ++i) {
+            write_map[i + 0x80] = dummy_areaw;
+
+            if(i < (cart_len >> 8))
+                read_map[i + 0x80] = cart_rom + (i << 8);
+            else
+                read_map[i + 0x80] = dummy_arear;
+        }
     }
 
     sms_z80_set_readmap(read_map);
@@ -545,6 +625,18 @@ int coleco_regs_read_context(const uint8 *buf) {
     /* Copy in the registers */
     cont_mode = buf[16];
 
+    if(megacart_pages) {
+        int i;
+
+        megacart_page = buf[17];
+
+        /* Fix the paging... */
+        for(i = 0; i < 0x40; ++i) {
+            read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
+            sms_z80_set_readmap(read_map);
+        }
+    }
+
     return 0;
 }
 
@@ -588,7 +680,8 @@ int coleco_mem_write_context(FILE *fp) {
     fwrite(data, 1, 4, fp);             /* Child pointer */
 
     data[0] = cont_mode;
-    data[1] = data[2] = data[3] = 0;
+    data[1] = megacart_page;
+    data[2] = data[3] = 0;
     fwrite(data, 1, 4, fp);
 
     return 0;

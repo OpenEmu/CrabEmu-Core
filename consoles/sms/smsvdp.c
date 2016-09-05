@@ -1,7 +1,7 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2012, 2013, 2014 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2012, 2013, 2014, 2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -1440,7 +1440,7 @@ static int sms_vdp_read_vram_context(const uint8 *buf) {
 
     /* Check the size */
     BUF_TO_UINT32(buf + 4, len);
-    if(len < 16 || len > 0x4010)
+    if(len != 0x4010)
         return -1;
 
     /* Check the version number */
@@ -1453,7 +1453,7 @@ static int sms_vdp_read_vram_context(const uint8 *buf) {
         return -1;
 
     memset(smsvdp.vram, 0, 0x4000);
-    memcpy(smsvdp.vram, buf + 16, len - 16);
+    memcpy(smsvdp.vram, buf + 16, 0x4000);
     return 0;
 }
 
@@ -1490,7 +1490,7 @@ static int sms_vdp_read_cram_context(const uint8 *buf) {
 
     /* Check the size */
     BUF_TO_UINT32(buf + 4, len);
-    if(len < 16 || len > 80)
+    if(len != 80)
         return -1;
 
     /* Check the version number */
@@ -1503,7 +1503,7 @@ static int sms_vdp_read_cram_context(const uint8 *buf) {
         return -1;
 
     memset(smsvdp.cram, 0, 64);
-    memcpy(smsvdp.cram, buf + 16, len - 16);
+    memcpy(smsvdp.cram, buf + 16, 64);
     return 0;
 }
 
@@ -1565,7 +1565,7 @@ int sms_vdp_read_context(const uint8 *buf) {
     uint32 len, child, clen;
     uint16 ver;
     const uint8 *ptr;
-    int rv, i;
+    int rv, i, tmp;
 
     /* Check the size */
     BUF_TO_UINT32(buf + 4, len);
@@ -1584,7 +1584,7 @@ int sms_vdp_read_context(const uint8 *buf) {
 
     /* Read the VDP state */
     for(i = 0; i < 16; ++i) {
-        sms_vdp_reg_write(i, buf[16 + i]);
+        smsvdp.regs[i] = buf[16 + i];
     }
 
     BUF_TO_UINT16(buf + 32, smsvdp.addr);
@@ -1645,6 +1645,21 @@ int sms_vdp_read_context(const uint8 *buf) {
         for(i = 0; i < 0x40; i += 2) {
             update_local_pal_gg(i);
         }
+    }
+
+    /* Deal with the updated register values... */
+    sms_z80_clear_irq();
+    smsvdp.sat = smsvdp.vram + ((smsvdp.regs[5] & 0x7E) << 7);
+    tmp = (smsvdp.regs[8] & 0xF8) >> 3;
+    smsvdp.xscroll_coarse = (32 - tmp) & 0x1F;
+    smsvdp.xscroll_fine = smsvdp.regs[8] & 0x07;
+    smsvdp.yscroll_fine = smsvdp.regs[9] & 0x07;
+    sms_vdp_set_vidmode(smsvdp.vidmode, smsvdp.machine);
+    readjust_name_table();
+
+    /* Assert the irq line if we need to. */
+    if((smsvdp.status & 0x80) && (smsvdp.regs[1] & 0x20)) {
+        sms_z80_assert_irq();
     }
 
     /* Mark all patterns as dirty */

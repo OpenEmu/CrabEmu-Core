@@ -2,7 +2,7 @@
     This file is part of CrabEmu.
 
     Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-                  2014, 2015 Lawrence Sebald
+                  2014, 2015, 2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -2072,6 +2072,8 @@ int sms_mapper_read_context(const uint8 *buf) {
 
         ptr += clen;
     }
+
+    reorganize_pages();
 
     return 0;
 }
