@@ -120,7 +120,7 @@ void coleco_port_write(uint16 port, uint8 data) {
 }
 
 uint8 coleco_mem_read(uint16 addr) {
-    if(megacart_pages && addr > 0xFFC0) {
+    if(megacart_pages && addr >= 0xFFC0) {
         int i;
 
         megacart_page = (addr & (megacart_pages - 1));
@@ -128,15 +128,16 @@ uint8 coleco_mem_read(uint16 addr) {
         /* Fix the paging... */
         for(i = 0; i < 0x40; ++i) {
             read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
-            sms_z80_set_readmap(read_map);
         }
+
+        sms_z80_set_readmap(read_map);
     }
 
     return read_map[addr >> 8][addr & 0xFF];
 }
 
 void coleco_mem_write(uint16 addr, uint8 data) {
-    if(megacart_pages && addr > 0xFFC0) {
+    if(megacart_pages && addr >= 0xFFC0) {
         int i;
 
         megacart_page = (addr & (megacart_pages - 1));
@@ -144,8 +145,9 @@ void coleco_mem_write(uint16 addr, uint8 data) {
         /* Fix the paging... */
         for(i = 0; i < 0x40; ++i) {
             read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
-            sms_z80_set_readmap(read_map);
         }
+
+        sms_z80_set_readmap(read_map);
     }
 
     write_map[addr >> 8][addr & 0xFF] = data;
@@ -156,7 +158,7 @@ uint16 coleco_mem_read16(uint16 addr) {
     ++addr;
 
     /* Nobody'd be stupid enough to do this, would they?... */
-    if(megacart_pages && addr > 0xFFC0) {
+    if(megacart_pages && addr >= 0xFFC0) {
         int i;
 
         megacart_page = (addr & (megacart_pages - 1));
@@ -164,8 +166,9 @@ uint16 coleco_mem_read16(uint16 addr) {
         /* Fix the paging... */
         for(i = 0; i < 0x40; ++i) {
             read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
-            sms_z80_set_readmap(read_map);
         }
+
+        sms_z80_set_readmap(read_map);
     }
 
     rv |= ((uint16)read_map[addr >> 8][addr & 0xFF]) << 8;
@@ -178,7 +181,7 @@ void coleco_mem_write16(uint16 addr, uint16 data) {
 
     /* Hopefully if nobody's stupid enough to trigger the one above, there
        really won't be anyone triggering THIS one... */
-    if(megacart_pages && addr > 0xFFC0) {
+    if(megacart_pages && addr >= 0xFFC0) {
         int i;
 
         megacart_page = (addr & (megacart_pages - 1));
@@ -186,8 +189,9 @@ void coleco_mem_write16(uint16 addr, uint16 data) {
         /* Fix the paging... */
         for(i = 0; i < 0x40; ++i) {
             read_map[i + 0xC0] = cart_rom + (megacart_page << 14) + (i << 8);
-            sms_z80_set_readmap(read_map);
         }
+
+        sms_z80_set_readmap(read_map);
     }
 
     write_map[addr >> 8][addr & 0xFF] = (uint8)(data >> 8);
@@ -230,9 +234,9 @@ static void finalize_load(const char *fn) {
         megacart_pages = cart_len >> 14;
 
 #ifdef DEBUG
-        fprintf(stderr, "coleco_mem_load_rom: Detected MegaCart\n"
-                "    %" PRIu32 " bytes long = %" PRIu32 " pages\n",
-                cart_len, megacart_pages);
+        printf("coleco_mem_load_rom: Detected MegaCart\n"
+               "    %" PRIu32 " bytes long = %" PRIu32 " pages\n",
+               cart_len, megacart_pages);
 #endif
 
         /* Always map 0x8000-0xBFFF to the top 16k of the cart... The page
@@ -751,6 +755,7 @@ int coleco_mem_init(void) {
     memset(bios_rom, 0, 8192);
 
     bios_loaded = 0;
+    megacart_page = megacart_pages = 0;
     coleco_cont_bits[0] = 0;
     coleco_cont_bits[1] = 0;
 

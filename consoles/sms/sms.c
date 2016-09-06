@@ -1,7 +1,8 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2014 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2012, 2014,
+                  2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2
@@ -49,6 +50,7 @@ int sms_psg_enabled = 1;
 int sms_ym2413_enabled = 1;
 sn76489_t psg;
 int sms_region = SMS_REGION_EXPORT;
+YM2413 *sms_fm = NULL;
 
 uint32 psg_samples[313];
 
@@ -142,7 +144,7 @@ int sms_init(int video_system, int region, int borders) {
 
         sn76489_init(&psg, NTSC_Z80_CLOCK, 44100.0f,
                      SN76489_NOISE_BITS_SMS, SN76489_NOISE_TAPPED_SMS);
-        YM2413Init(1, NTSC_Z80_CLOCK, 44100);
+        sms_fm = ym2413_init(NTSC_Z80_CLOCK, 44100);
     }
     else {
         tmp = PAL_Z80_CLOCK / PSG_DIVISOR / PAL_FPS / PAL_LINES_PER_FRAME /
@@ -158,7 +160,7 @@ int sms_init(int video_system, int region, int borders) {
 
         sn76489_init(&psg, PAL_Z80_CLOCK, 44100.0f,
                      SN76489_NOISE_BITS_SMS, SN76489_NOISE_TAPPED_SMS);
-        YM2413Init(1, PAL_Z80_CLOCK, 44100);
+        sms_fm = ym2413_init(PAL_Z80_CLOCK, 44100);
     }
 
     sms_region = region;
@@ -174,7 +176,7 @@ int sms_init(int video_system, int region, int borders) {
     sound_init(2, video_system);
 
     sms_sdsc_reset();
-    YM2413ResetChip(0);
+    ym2413_reset(sms_fm);
     cycles_run = cycles_to_run = scanline = 0;
 
     sms_cons._base.initialized = 1;
@@ -195,7 +197,7 @@ int sms_reset(void) {
                       SN76489_NOISE_BITS_SMS, SN76489_NOISE_TAPPED_SMS);
     }
 
-    YM2413ResetChip(0);
+    ym2413_reset(sms_fm);
 
     sound_reset_buffer();
 
@@ -218,7 +220,7 @@ int sms_soft_reset(void) {
     if(sms_cons._base.initialized == 0)
         return 0;
 
-    YM2413ResetChip(0);
+    ym2413_reset(sms_fm);
 
     sound_reset_buffer();
 
@@ -238,7 +240,7 @@ int sms_shutdown(void) {
     sms_mem_shutdown();
     sms_vdp_shutdown();
     sms_z80_shutdown();
-    YM2413Shutdown();
+    ym2413_shutdown(sms_fm);
     sound_shutdown();
 
     /* Reset a few things in case we reinit later. */
@@ -261,11 +263,11 @@ static __INLINE__ int update_sound(int16 buf[], int start, int line) {
         memset(buf + start, 0, psg_samples[line] << 2);
 
     if(sms_ym2413_enabled) {
-        YM2413UpdateOne(0, fmbuf, psg_samples[line]);
+        ym2413_update(sms_fm, fmbuf, psg_samples[line]);
 
         /* Mix in the FM unit's samples */
         for(i = 0; i < psg_samples[line]; ++i) {
-            tmp = (fmbuf[i << 1] + fmbuf[(i << 1) + 1]) / 2;
+            tmp = (fmbuf[i << 1] + fmbuf[(i << 1) + 1]);
             buf[(i << 1) + start] += tmp;
             buf[(i << 1) + 1 + start] += tmp;
         }

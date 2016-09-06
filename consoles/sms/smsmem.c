@@ -1,8 +1,8 @@
 /*
     This file is part of CrabEmu.
 
-    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-                  2014, 2015, 2016 Lawrence Sebald
+    Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+                  2015, 2016 Lawrence Sebald
 
     CrabEmu is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 2 
@@ -82,6 +82,7 @@ extern int sms_region;
 extern sn76489_t psg;
 extern eeprom93c46_t e93c46;
 extern int sms_ym2413_enabled;
+extern YM2413 *sms_fm;
 
 uint8 sms_paging_regs[4];
 uint8 *sms_rom_page0;
@@ -700,12 +701,14 @@ void sms_port_write(uint16 port, uint8 data) {
         if(sms_ym2413_enabled) {
             if(port == 0xF0) {
                 sms_ym2413_regs[0x40] = data;
-                YM2413Write(0, 0, data);
+                //YM2413Write(0, 0, data);
+                ym2413_write(sms_fm, 0, data);
                 sms_ym2413_in_use = 1;
             }
             else if(port == 0xF1) {
                 sms_ym2413_regs[sms_ym2413_regs[0x40]] = data;
-                YM2413Write(0, 1, data);
+                //YM2413Write(0, 1, data);
+                ym2413_write(sms_fm, 1, data);
                 sms_ym2413_in_use = 1;
             }
             else if(port == 0xF2) {
@@ -1676,30 +1679,30 @@ int sms_ym2413_read_context(const uint8 *buf) {
     memcpy(sms_ym2413_regs, buf + 16, 65);
 
     /* This is based on how SMS Plus handles things... */
-    YM2413Write(0, 0, 0x0E);
-    YM2413Write(0, 1, sms_ym2413_regs[0x0E]);
+    ym2413_write(sms_fm, 0, 0x0E);
+    ym2413_write(sms_fm, 1, sms_ym2413_regs[0x0E]);
 
     for(i = 0x00; i <= 0x07; ++i) {
-        YM2413Write(0, 0, i);
-        YM2413Write(0, 1, sms_ym2413_regs[i]);
+        ym2413_write(sms_fm, 0, i);
+        ym2413_write(sms_fm, 1, sms_ym2413_regs[i]);
     }
 
     for(i = 0x10; i <= 0x18; ++i) {
-        YM2413Write(0, 0, i);
-        YM2413Write(0, 1, sms_ym2413_regs[i]);
+        ym2413_write(sms_fm, 0, i);
+        ym2413_write(sms_fm, 1, sms_ym2413_regs[i]);
     }
 
     for(i = 0x20; i <= 0x28; ++i) {
-        YM2413Write(0, 0, i);
-        YM2413Write(0, 1, sms_ym2413_regs[i]);
+        ym2413_write(sms_fm, 0, i);
+        ym2413_write(sms_fm, 1, sms_ym2413_regs[i]);
     }
 
     for(i = 0x30; i <= 0x38; ++i) {
-        YM2413Write(0, 0, i);
-        YM2413Write(0, 1, sms_ym2413_regs[i]);
+        ym2413_write(sms_fm, 0, i);
+        ym2413_write(sms_fm, 1, sms_ym2413_regs[i]);
     }
 
-    YM2413Write(0, 0, sms_ym2413_regs[64]);
+    ym2413_write(sms_fm, 0, sms_ym2413_regs[64]);
 
     return 0;
 }
