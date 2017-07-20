@@ -50,7 +50,6 @@
 
 @interface SMSGameCore () <OESMSSystemResponderClient, OEGGSystemResponderClient, OESG1000SystemResponderClient, OEColecoVisionSystemResponderClient>
 {
-    unsigned char *tempBuffer;
     NSLock        *bufLock;
     BOOL           paused;
     NSURL         *romFile;
@@ -73,7 +72,6 @@ console_t *cur_console;
     if(self != nil)
     {
         bufLock = [[NSLock alloc] init];
-        tempBuffer = malloc(256 * 256 * 4);
         cheatList = [[NSMutableDictionary alloc] init];
         ringBuffer = [self ringBufferAtIndex:0];
     }
@@ -83,7 +81,6 @@ console_t *cur_console;
 - (void)dealloc
 {
     DLog(@"releasing/deallocating CrabEmu memory");
-    free(tempBuffer);
 
     cur_console->shutdown();
 }
