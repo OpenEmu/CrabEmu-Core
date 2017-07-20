@@ -196,12 +196,16 @@ console_t *cur_console;
 
 - (OEIntSize)bufferSize
 {
-    return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 256, cur_console->console_type == CONSOLE_GG ? 144 : 256);
+    uint32_t f_x, f_y;
+    cur_console->frame_size(&f_x, &f_y);
+    return OEIntSizeMake(f_x, f_y);
 }
 
 - (OEIntRect)screenRect
 {
-    return OEIntRectMake(0, 0, cur_console->console_type == CONSOLE_GG ? 160 : 256, cur_console->console_type == CONSOLE_GG ? 144 : smsvdp.lines);
+    uint32_t a_x, a_y, a_w, a_h;
+    cur_console->active_size(&a_x, &a_y, &a_w, &a_h);
+    return OEIntRectMake(a_x, a_y, a_w, a_h);
 }
 
 - (OEIntSize)aspectSize
@@ -212,14 +216,7 @@ console_t *cur_console;
 - (const void *)videoBuffer
 {
     // TODO direct-rendering
-    if (cur_console->console_type != CONSOLE_GG)
-        return smsvdp.framebuffer;
-    else
-        for (int i = 0; i < 144; i++)
-            //jump 24 lines, skip 48 pixels and capture for each line of the buffer 160 pixels
-            // sizeof(unsigned char) is always equal to 1 by definition
-            memcpy(tempBuffer + i * 160 * 4, smsvdp.framebuffer  + 24 * 256 * 1 + 48 * 1 + i * 256 * 1, 160 * 4);
-    return tempBuffer;
+    return cur_console->framebuffer();
 }
 
 - (GLenum)pixelFormat
