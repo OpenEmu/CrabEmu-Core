@@ -211,6 +211,7 @@ console_t *cur_console;
 
 - (const void *)videoBuffer
 {
+    // TODO direct-rendering
     if (cur_console->console_type != CONSOLE_GG)
         return smsvdp.framebuffer;
     else
@@ -229,11 +230,6 @@ console_t *cur_console;
 - (GLenum)pixelType
 {
     return GL_UNSIGNED_INT_8_8_8_8_REV;
-}
-
-- (GLenum)internalPixelFormat
-{
-    return GL_RGB8;
 }
 
 # pragma mark - Audio
