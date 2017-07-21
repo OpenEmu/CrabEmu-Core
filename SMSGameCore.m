@@ -210,10 +210,12 @@ console_t *cur_console;
     return OEIntSizeMake(cur_console->console_type == CONSOLE_GG ? 160 : 256 * (8.0/7.0), cur_console->console_type == CONSOLE_GG ? 144 : 192);
 }
 
-- (const void *)videoBuffer
+- (const void *)getVideoBufferWithHint:(void *)hint
 {
-    // TODO direct-rendering
-    return cur_console->framebuffer();
+    if (!hint) {
+        return cur_console->framebuffer();
+    }
+    return smsvdp.framebuffer = (uint32*)hint;
 }
 
 - (GLenum)pixelFormat
