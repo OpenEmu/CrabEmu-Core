@@ -90,15 +90,15 @@ console_t *cur_console;
 - (BOOL)loadFileAtPath:(NSString *)path error:(NSError **)error
 {
     romFile = [NSURL fileURLWithPath:path];
-    int console = rom_detect_console([path UTF8String]);
+    int console = rom_detect_console(path.fileSystemRepresentation);
     DLog(@"Loaded File");
     //TODO: add choice NTSC/PAL
     if(console == CONSOLE_COLECOVISION)
     {
         NSString *biosPath = [[self biosDirectoryPath] stringByAppendingPathComponent:@"coleco.rom"];
         coleco_init(VIDEO_NTSC);
-        coleco_mem_load_bios([biosPath UTF8String]);
-        coleco_mem_load_rom([path UTF8String]);
+        coleco_mem_load_bios(biosPath.fileSystemRepresentation);
+        coleco_mem_load_rom(path.fileSystemRepresentation);
     }
     else
     {
@@ -140,7 +140,7 @@ console_t *cur_console;
             region = SMS_REGION_DOMESTIC;
 
         sms_init(SMS_VIDEO_NTSC, region, 0); // 1 = VDP borders
-        sms_mem_load_rom([path UTF8String], console);
+        sms_mem_load_rom(path.fileSystemRepresentation, console);
         cur_console->frame(0);
     }
 
@@ -151,7 +151,7 @@ console_t *cur_console;
         [[NSFileManager defaultManager] createDirectoryAtURL:batterySavesDirectory withIntermediateDirectories:YES attributes:nil error:nil];
         NSURL *saveFile = [batterySavesDirectory URLByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
 
-        if([saveFile checkResourceIsReachableAndReturnError:nil] && sms_read_cartram_from_file([[saveFile path] UTF8String]) == 0)
+        if([saveFile checkResourceIsReachableAndReturnError:nil] && sms_read_cartram_from_file(saveFile.path.fileSystemRepresentation) == 0)
             NSLog(@"CrabEmu: Loaded sram");
     }
 
@@ -178,7 +178,7 @@ console_t *cur_console;
         NSURL *batterySavesDirectory = [NSURL fileURLWithPath:[self batterySavesDirectoryPath]];
         NSURL *saveFile = [batterySavesDirectory URLByAppendingPathComponent:[extensionlessFilename stringByAppendingPathExtension:@"sav"]];
 
-        cur_console->save_sram([[saveFile path] UTF8String]);
+        cur_console->save_sram(saveFile.path.fileSystemRepresentation);
     }
 
     [super stopEmulation];
