@@ -55,9 +55,6 @@
     NSURL         *romFile;
     NSMutableDictionary *cheatList;
 }
-- (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
-- (int)crabButtonForSG1000Button:(OESG1000Button)button;
-- (int)crabButtonForColecoVisionButton:(OEColecoVisionButton)button player:(NSUInteger)player;
 @end
 
 @implementation SMSGameCore
@@ -362,109 +359,27 @@ void gui_set_console(console_t *c)
 
 # pragma mark - Input
 
-- (int)crabButtonForButton:(OESMSButton)button player:(NSUInteger)player;
-{
-    int btn = -1;
-    switch(button)
-    {
-        case OESMSButtonUp    : btn = SMS_UP;       break;
-        case OESMSButtonDown  : btn = SMS_DOWN;     break;
-        case OESMSButtonLeft  : btn = SMS_LEFT;     break;
-        case OESMSButtonRight : btn = SMS_RIGHT;    break;
-        case OESMSButtonA     : btn = SMS_BUTTON_1; break;
-        case OESMSButtonB     : btn = SMS_BUTTON_2; break;
-        default : break;
-    }
-
-    return btn;
-}
-
-- (int)crabButtonForButton:(OEGGButton)button;
-{
-    int btn = -1;
-    switch(button)
-    {
-        case OEGGButtonUp:    btn = SMS_UP;         break;
-        case OEGGButtonDown:  btn = SMS_DOWN;       break;
-        case OEGGButtonLeft:  btn = SMS_LEFT;       break;
-        case OEGGButtonRight: btn = SMS_RIGHT;      break;
-        case OEGGButtonA:     btn = SMS_BUTTON_1;   break;
-        case OEGGButtonB:     btn = SMS_BUTTON_2;   break;
-        case OEGGButtonStart: btn = GAMEGEAR_START; break;
-        default : break;
-    }
-
-    return btn;
-}
-
-- (int)crabButtonForSG1000Button:(OESG1000Button)button;
-{
-    int btn = -1;
-    switch(button)
-    {
-        case OESG1000ButtonUp:    btn = SMS_UP;       break;
-        case OESG1000ButtonDown:  btn = SMS_DOWN;     break;
-        case OESG1000ButtonLeft:  btn = SMS_LEFT;     break;
-        case OESG1000ButtonRight: btn = SMS_RIGHT;    break;
-        case OESG1000Button1:     btn = SMS_BUTTON_1; break;
-        case OESG1000Button2:     btn = SMS_BUTTON_2; break;
-        default : break;
-    }
-
-    return btn;
-}
-
-- (int)crabButtonForColecoVisionButton:(OEColecoVisionButton)button player:(NSUInteger)player;
-{
-    int btn = -1;
-    switch(button)
-    {
-        case OEColecoVisionButtonUp          : btn = COLECOVISION_UP;       break;
-        case OEColecoVisionButtonDown        : btn = COLECOVISION_DOWN;     break;
-        case OEColecoVisionButtonLeft        : btn = COLECOVISION_LEFT;     break;
-        case OEColecoVisionButtonRight       : btn = COLECOVISION_RIGHT;    break;
-        case OEColecoVisionButtonLeftAction  : btn = COLECOVISION_L_ACTION; break;
-        case OEColecoVisionButtonRightAction : btn = COLECOVISION_R_ACTION; break;
-        case OEColecoVisionButton1           : btn = COLECOVISION_1;        break;
-        case OEColecoVisionButton2           : btn = COLECOVISION_2;        break;
-        case OEColecoVisionButton3           : btn = COLECOVISION_3;        break;
-        case OEColecoVisionButton4           : btn = COLECOVISION_4;        break;
-        case OEColecoVisionButton5           : btn = COLECOVISION_5;        break;
-        case OEColecoVisionButton6           : btn = COLECOVISION_6;        break;
-        case OEColecoVisionButton7           : btn = COLECOVISION_7;        break;
-        case OEColecoVisionButton8           : btn = COLECOVISION_8;        break;
-        case OEColecoVisionButton9           : btn = COLECOVISION_9;        break;
-        case OEColecoVisionButton0           : btn = COLECOVISION_0;        break;
-        case OEColecoVisionButtonAsterisk    : btn = COLECOVISION_STAR;     break;
-        case OEColecoVisionButtonPound       : btn = COLECOVISION_POUND;    break;
-        default : break;
-    }
-
-    return btn;
-}
+const int MasterSystemMap[] = {SMS_UP, SMS_DOWN, SMS_LEFT, SMS_RIGHT, SMS_BUTTON_1, SMS_BUTTON_2, GAMEGEAR_START};
+const int ColecoVisionMap[] = {COLECOVISION_UP, COLECOVISION_DOWN, COLECOVISION_LEFT, COLECOVISION_RIGHT, COLECOVISION_L_ACTION, COLECOVISION_R_ACTION, COLECOVISION_1, COLECOVISION_2, COLECOVISION_3, COLECOVISION_4, COLECOVISION_5, COLECOVISION_6, COLECOVISION_7, COLECOVISION_8, COLECOVISION_9, COLECOVISION_0, COLECOVISION_STAR, COLECOVISION_POUND};
 
 - (oneway void)didPushGGButton:(OEGGButton)button;
 {
-    int btn = [self crabButtonForButton:button];
-    if(btn > -1) sms_button_pressed(1, btn);
+    sms_button_pressed(1, MasterSystemMap[button]);
 }
 
 - (oneway void)didReleaseGGButton:(OEGGButton)button;
 {
-    int btn = [self crabButtonForButton:button];
-    if(btn > -1) sms_button_released(1, btn);
+    sms_button_released(1, MasterSystemMap[button]);
 }
 
 - (oneway void)didPushSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
-    int btn = [self crabButtonForButton:button player:player];
-    if(btn > -1) sms_button_pressed(player, btn);
+    sms_button_pressed((int)player, MasterSystemMap[button]);
 }
 
 - (oneway void)didReleaseSMSButton:(OESMSButton)button forPlayer:(NSUInteger)player;
 {
-    int btn = [self crabButtonForButton:button player:player];
-    if(btn > -1) sms_button_released(player, btn);
+    sms_button_released((int)player, MasterSystemMap[button]);
 }
 
 - (oneway void)didPushSMSStartButton;
@@ -489,26 +404,23 @@ void gui_set_console(console_t *c)
 
 - (oneway void)didPushSG1000Button:(OESG1000Button)button forPlayer:(NSUInteger)player
 {
-    int btn = [self crabButtonForSG1000Button:button];
-    if(btn > -1) sms_button_pressed((int)player, btn);
+    //console pause, sms_z80_nmi()
+    sms_button_pressed((int)player, MasterSystemMap[button]);
 }
 
 - (oneway void)didReleaseSG1000Button:(OESG1000Button)button forPlayer:(NSUInteger)player
 {
-    int btn = [self crabButtonForSG1000Button:button];
-    if(btn > -1) sms_button_released((int)player, btn);
+    sms_button_released((int)player, MasterSystemMap[button]);
 }
 
 - (oneway void)didPushColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
 {
-    int btn = [self crabButtonForColecoVisionButton:button player:player];
-    if(btn > -1) coleco_button_pressed(player, btn);
+    coleco_button_pressed((int)player, ColecoVisionMap[button]);
 }
 
 - (oneway void)didReleaseColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
 {
-    int btn = [self crabButtonForColecoVisionButton:button player:player];
-    if(btn > -1) coleco_button_released(player, btn);
+    coleco_button_released((int)player, ColecoVisionMap[button]);
 }
 
 #pragma mark - Cheats
