@@ -487,16 +487,16 @@ void gui_set_console(console_t *c)
     sms_button_released(1, SMS_CONSOLE_RESET);
 }
 
-- (oneway void)didPushSG1000Button:(OESG1000Button)button;
+- (oneway void)didPushSG1000Button:(OESG1000Button)button forPlayer:(NSUInteger)player
 {
     int btn = [self crabButtonForSG1000Button:button];
-    if(btn > -1) sms_button_pressed(1, btn);
+    if(btn > -1) sms_button_pressed((int)player, btn);
 }
 
-- (oneway void)didReleaseSG1000Button:(OESG1000Button)button;
+- (oneway void)didReleaseSG1000Button:(OESG1000Button)button forPlayer:(NSUInteger)player
 {
     int btn = [self crabButtonForSG1000Button:button];
-    if(btn > -1) sms_button_released(1, btn);
+    if(btn > -1) sms_button_released((int)player, btn);
 }
 
 - (oneway void)didPushColecoVisionButton:(OEColecoVisionButton)button forPlayer:(NSUInteger)player;
