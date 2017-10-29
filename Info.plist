@@ -90,9 +90,6 @@
 	<string>http://crabemu.sourceforge.net/</string>
 	<key>OESystemIdentifiers</key>
 	<array>
-		<string>openemu.system.sms</string>
-		<string>openemu.system.gg</string>
-		<string>openemu.system.sg1000</string>
 		<string>openemu.system.colecovision</string>
 	</array>
 	<key>SUEnableAutomaticChecks</key>
