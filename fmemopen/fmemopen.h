@@ -43,8 +43,9 @@ extern "C"
      *      @returns A pointer that can be used in the fread/fwrite/fseek/fclose family of methods.
      *               If a failure occurred NULL will be returned.
      */
-    FILE *fmemopen(void *buf, size_t size, const char *mode);
-    
+    FILE *fmemopen_(void *buf, size_t size, const char *mode);
+#define fmemopen fmemopen_
+
 #ifdef __cplusplus
 }
 #endif

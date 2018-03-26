@@ -7,6 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "fmemopen.h"
+#undef fmemopen
+
+#ifndef __has_builtin           // Optional of course.
+    #define __has_builtin(x) 0  // Compatibility with non-clang compilers.
+#endif
 
 #ifndef linux
 struct fmem {
@@ -67,8 +73,13 @@ static int closefn(void *handler)
 }
 
 /* simple, but portable version of fmemopen for OS X / BSD */
-FILE *fmemopen(void *buf, size_t size, const char *mode)
+FILE *fmemopen_(void *buf, size_t size, const char *mode)
 {
+#if __has_builtin(__builtin_available)
+    if (__builtin_available(macOS 10.13, iOS 11.0, tvOS 11.0, watchOS 4.0, *)) {
+        return fmemopen(buf, size, mode);
+    }
+#endif
     fmem_t *mem = (fmem_t *) malloc(sizeof(fmem_t));
     
     memset(mem, 0, sizeof(fmem_t));
