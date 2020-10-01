@@ -130,7 +130,7 @@
 		27E3D4E51B6543D500D8D8B5 /* open_memstream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = open_memstream.c; path = fmemopen/open_memstream.c; sourceTree = "<group>"; };
 		27E3D4E61B6543D500D8D8B5 /* open_memstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = open_memstream.h; path = fmemopen/open_memstream.h; sourceTree = "<group>"; };
 		3720DB4C0F19510D00744A9A /* CrabEmu.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = CrabEmu.icns; sourceTree = "<group>"; };
-		8291C4E21489595000A72540 /* OEGGSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEGGSystemResponderClient.h; path = ../OpenEmu/GameGear/OEGGSystemResponderClient.h; sourceTree = "<group>"; };
+		8291C4E21489595000A72540 /* OEGGSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEGGSystemResponderClient.h; path = ../OpenEmu/SystemPlugins/GameGear/OEGGSystemResponderClient.h; sourceTree = "<group>"; };
 		878700D11B674AB3006841C9 /* queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = queue.h; path = utils/queue.h; sourceTree = "<group>"; };
 		878700DA1B675E9C006841C9 /* chip8.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = chip8.c; path = chip8/chip8.c; sourceTree = "<group>"; };
 		878700DB1B675E9C006841C9 /* chip8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = chip8.h; path = chip8/chip8.h; sourceTree = "<group>"; };
@@ -251,12 +251,12 @@
 		9443D4371715F33C00E452AC /* ym2413.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ym2413.h; sourceTree = "<group>"; };
 		9443D45B1715F67D00E452AC /* rom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rom.c; sourceTree = "<group>"; };
 		9443D45C1715F67D00E452AC /* rom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rom.h; sourceTree = "<group>"; };
-		946C18AF171491B300C64BF9 /* OESG1000SystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESG1000SystemResponderClient.h; path = "../OpenEmu/SG-1000/OESG1000SystemResponderClient.h"; sourceTree = "<group>"; };
-		94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEColecoVisionSystemResponderClient.h; path = ../OpenEmu/ColecoVision/OEColecoVisionSystemResponderClient.h; sourceTree = "<group>"; };
+		946C18AF171491B300C64BF9 /* OESG1000SystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESG1000SystemResponderClient.h; path = "../OpenEmu/SystemPlugins/SG-1000/OESG1000SystemResponderClient.h"; sourceTree = "<group>"; };
+		94BE9E79171695AE00AB08E6 /* OEColecoVisionSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OEColecoVisionSystemResponderClient.h; path = ../OpenEmu/SystemPlugins/ColecoVision/OEColecoVisionSystemResponderClient.h; sourceTree = "<group>"; };
 		B5DA7D8C0F5B28940008F047 /* CrabEmu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CrabEmu.h; sourceTree = "<group>"; };
 		C66DFC180F51D82F0080AA28 /* SMSGameCore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SMSGameCore.m; sourceTree = "<group>"; };
 		C66DFC190F51D82F0080AA28 /* SMSGameCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SMSGameCore.h; sourceTree = "<group>"; };
-		C6B3E67C1365255700D34947 /* OESMSSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESMSSystemResponderClient.h; path = ../OpenEmu/SegaMasterSystem/OESMSSystemResponderClient.h; sourceTree = "<group>"; };
+		C6B3E67C1365255700D34947 /* OESMSSystemResponderClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OESMSSystemResponderClient.h; path = ../OpenEmu/SystemPlugins/SegaMasterSystem/OESMSSystemResponderClient.h; sourceTree = "<group>"; };
 		C6D120E71711302600E868A8 /* OpenEmuBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = OpenEmuBase.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2F7E65807B2D6F200F64583 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -625,7 +625,6 @@
 		089C1669FE841209C02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 0700;
 			};
 			buildConfigurationList = 1DEB913E08733D840010E9CD /* Build configuration list for PBXProject "CrabEmu" */;
