@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#undef open_memstream_
 
 struct memstream {
     char **cp;
@@ -107,8 +108,13 @@ memstream_close(void *cookie)
 }
 
 FILE *
-open_memstream(char **cp, size_t *lenp)
+open_memstream_(char **cp, size_t *lenp)
 {
+#if __has_builtin(__builtin_available)
+    if (__builtin_available(macOS 10.13, iOS 11.0, tvOS 11.0, watchOS 4.0, *)) {
+        return open_memstream(cp, lenp);
+    }
+#endif
     struct memstream *ms;
     int save_errno;
     FILE *fp;

@@ -6,7 +6,8 @@ extern "C"
 {
 #endif
     
-    FILE *open_memstream(char **cp, size_t *lenp);
+    FILE *open_memstream_(char **cp, size_t *lenp);
+#define open_memstream open_memstream_
     
 #ifdef __cplusplus
 }
