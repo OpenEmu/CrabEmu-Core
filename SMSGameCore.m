@@ -43,8 +43,10 @@
 #include "cheats.h"
 #include "console.h"
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_13
 #include "fmemopen/fmemopen.h"
 #include "fmemopen/open_memstream.h"
+#endif
 
 #define SAMPLERATE 44100
 
@@ -389,7 +391,7 @@ const int ColecoVisionMap[] = {COLECOVISION_UP, COLECOVISION_DOWN, COLECOVISION_
 
 - (oneway void)didReleaseSMSStartButton;
 {
-
+    sms_button_released(1, GAMEGEAR_START);
 }
 
 - (oneway void)didPushSMSResetButton;

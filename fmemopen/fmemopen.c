@@ -3,6 +3,11 @@
  * 20081017 AF
  */
 
+#include <AvailabilityMacros.h>
+
+/* Don't build if the deployment target is 10.13 or above. */
+#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_13
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,4 +91,6 @@ FILE *fmemopen_(void *buf, size_t size, const char *mode)
     mem->size = size, mem->buffer = buf;
     return funopen(mem, readfn, writefn, seekfn, closefn);
 }
+#endif
+
 #endif

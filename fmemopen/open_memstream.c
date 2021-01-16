@@ -1,10 +1,16 @@
 /* Use funopen(3) to provide open_memstream(3) like functionality. */
 
+#include <AvailabilityMacros.h>
+
+/* But only if the deployment target is below 10.13 */
+#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_13
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#undef open_memstream_
+#include "open_memstream.h"
+#undef open_memstream
 
 struct memstream {
     char **cp;
@@ -134,3 +140,5 @@ open_memstream_(char **cp, size_t *lenp)
     }
     return (fp);
 }
+
+#endif
